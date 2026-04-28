@@ -1,136 +1,165 @@
 """
 Executor — 任务执行器（行动核）
-专门负责：调用工具、执行步骤、处理错误、返回结果
+负责：调用工具、执行步骤、处理错误、返回结果
 继承 Hermes 全部 60+ 工具，新增工具链自动编排
 """
 
 import asyncio
+import json
+import re
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
+
+from vulcan.agent.tools.registry import VulcanToolRegistry
+from vulcan.agent.observability.logger import VulcanLogger
 
 
 @dataclass
 class ExecutionResult:
-    response: str
-    is_satisfactory: bool
-    elapsed_ms: float
-    tools_used: list[str]
-    error_message: str = ""
+    """单次工具执行结果。"""
+    tool_name: str
+    args: dict
+    success: bool
+    result: Any = None
+    error: str = None
+    duration_ms: float = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "tool_name": self.tool_name,
+            "args": self.args,
+            "success": self.success,
+            "result": str(self.result)[:500] if self.result else None,
+            "error": self.error,
+            "duration_ms": round(self.duration_ms, 2),
+        }
 
 
 class Executor:
     """
-    任务执行器 — Vulcan 双核架构的"行动"部分
+    执行器：解析 Plan 中的 action，调用对应的工具。
 
-    职责：
-    1. 按计划顺序执行步骤
-    2. 调用相应工具
-    3. 处理工具执行错误（自动重试 + 备选方案）
-    4. 并行执行无依赖的步骤
-    5. 工具链自动编排（无需手动 delegate）
-
-    新增（对比 Hermes）：
-    - 强化错误恢复（3 次重试 + 备选工具）
-    - 工具链引擎（自动组合工具）
-    - 执行超时控制
-    - 资源限制（防止恶意调用）
+    支持三种 action 格式：
+    1. tool_name{arg1: value1}  — JSON 格式
+    2. tool_name(arg1=value1)  — Python call 格式
+    3. 直接函数调用（内部链）
     """
 
-    def __init__(self, tools: list, logger, max_retries: int = 3):
-        self.tools = {t.name: t for t in tools}
-        self.logger = logger
-        self.max_retries = max_retries
+    def __init__(
+        self,
+        tools: VulcanToolRegistry,
+        timeout: float = 120.0,
+        logger: VulcanLogger = None,
+    ):
+        self.tools = tools
+        self.timeout = timeout
+        self.logger = logger or VulcanLogger(name="Executor")
 
-    async def execute(self, plan, memory) -> ExecutionResult:
-        """执行计划中的所有步骤"""
-        start_time = time.time()
-        tools_used = []
+    async def execute(self, action: str) -> Any:
+        """
+        执行一个 action 字符串，返回结果。
 
-        try:
-            # 构建依赖图，并行执行无依赖的步骤
-            results = await self._execute_parallel(plan.steps, memory)
-            tools_used = [s["tool"] for s in plan.steps if s.get("tool")]
-
-            # 汇总结果
-            response = self._summarize_results(results)
-
-            elapsed_ms = (time.time() - start_time) * 1000
-
+        action 格式示例：
+        - 'web_search{"query": "python latest version"}'
+        - 'terminal{"command": "ls -la"}'
+        - 'browser_navigate{"url": "https://example.com"}'
+        """
+        tool_name, args = self._parse_action(action)
+        if not tool_name:
             return ExecutionResult(
-                response=response,
-                is_satisfactory=True,
-                elapsed_ms=elapsed_ms,
-                tools_used=tools_used,
+                tool_name="unknown",
+                args={},
+                success=False,
+                error=f"Could not parse action: {action}",
             )
 
-        except Exception as e:
-            elapsed_ms = (time.time() - start_time) * 1000
-            self.logger.error(f"Executor 执行失败: {e}")
+        # Call tool through registry
+        result = await self.tools.call(tool_name, args)
 
-            return ExecutionResult(
-                response=f"执行出错：{e}",
-                is_satisfactory=False,
-                elapsed_ms=elapsed_ms,
-                tools_used=tools_used,
-                error_message=str(e),
+        exec_result = ExecutionResult(
+            tool_name=tool_name,
+            args=args,
+            success=result.success,
+            result=result.result,
+            error=result.error,
+            duration_ms=result.duration_ms,
+        )
+
+        self.logger.info(
+            "tool_executed",
+            extra=exec_result.to_dict(),
+        )
+
+        if not result.success:
+            self.logger.warning(
+                "tool_failed",
+                extra={"tool": tool_name, "error": result.error},
             )
 
-    async def _execute_parallel(self, steps: list[dict], memory) -> list[Any]:
-        """并行执行无依赖的步骤"""
-        # 简化版：顺序执行
-        # 后续实现真正的并行执行
+        return exec_result
+
+    def _parse_action(self, action: str) -> tuple[Optional[str], dict]:
+        """
+        解析 action 字符串，返回 (tool_name, args_dict)。
+
+        支持格式：
+        - tool_name{...}      → JSON
+        - tool_name(...)      → Python call
+        """
+        # Try JSON format: tool_name{...}
+        match = re.match(r'^(\w+)\s*(\{.*\})?$', action.strip(), re.DOTALL)
+        if not match:
+            return None, {}
+
+        tool_name = match.group(1)
+        args_str = match.group(2) or "{}"
+
+        # Clean up JSON
+        args_str = args_str.strip()
+        if args_str.startswith("{") and args_str.endswith("}"):
+            try:
+                args = json.loads(args_str)
+                return tool_name, args
+            except json.JSONDecodeError:
+                pass
+
+        # Try Python call format: tool_name(...)
+        match2 = re.match(r'^(\w+)\s*\((.*)?\)$', action.strip(), re.DOTALL)
+        if match2:
+            tool_name = match2.group(1)
+            args_str2 = match2.group(2) or ""
+            if args_str2:
+                args = self._parse_python_args(args_str2)
+                return tool_name, args
+
+        return tool_name, {}
+
+    def _parse_python_args(self, args_str: str) -> dict:
+        """
+        解析 Python 函数参数格式: key=value, key2="string", key3=123
+        """
+        args = {}
+        # Simple regex for key=value pairs
+        pairs = re.findall(r'(\w+)\s*=\s*("([^"]*)"|\'([^\']*)\'|(\d+\.?\d*))', args_str)
+        for name, _, dquote, squote, number in pairs:
+            if dquote:
+                args[name] = dquote
+            elif squote:
+                args[name] = squote
+            elif number:
+                args[name] = float(number) if '.' in number else int(number)
+        return args
+
+    async def execute_chain(self, actions: list[str]) -> list[ExecutionResult]:
+        """
+        顺序执行多个 action，返回所有结果。
+        遇到失败默认停止（除非 on_error="skip"）。
+        """
         results = []
-        for step in steps:
-            result = await self._execute_step(step, memory)
+        for action in actions:
+            result: ExecutionResult = await self.execute(action)
             results.append(result)
+            if not result.success:
+                break
         return results
-
-    async def _execute_step(self, step: dict, memory) -> Any:
-        """执行单个步骤"""
-        tool_name = step.get("tool", "general")
-        args = step.get("args", {})
-        step_type = step.get("type", "tool_call")
-
-        if step_type == "tool_call" and tool_name in self.tools:
-            tool = self.tools[tool_name]
-            return await self._call_tool_with_retry(tool, args, memory)
-        else:
-            # 没有具体工具，使用通用 LLM 生成
-            return await self._general_completion(args.get("task", ""), memory)
-
-    async def _call_tool_with_retry(self, tool, args: dict, memory, attempt: int = 1) -> Any:
-        """带重试的工具调用"""
-        try:
-            result = await tool.execute(args, memory=memory)
-            return result
-        except Exception as e:
-            if attempt < self.max_retries:
-                self.logger.info(f"工具 {tool.name} 第 {attempt} 次失败，重试...")
-                await asyncio.sleep(2 ** attempt)  # 指数退避
-                return await self._call_tool_with_retry(tool, args, memory, attempt + 1)
-            else:
-                # 尝试备选工具
-                alt_tool = self._find_alternative_tool(tool.name)
-                if alt_tool:
-                    self.logger.info(f"切换到备选工具 {alt_tool.name}")
-                    return await alt_tool.execute(args, memory=memory)
-                raise e
-
-    def _find_alternative_tool(self, original_tool: str) -> Any:
-        """查找备选工具"""
-        # 简化版：后续实现工具替代方案发现
-        return None
-
-    async def _general_completion(self, task: str, memory) -> str:
-        """通用 LLM 生成（当没有具体工具时）"""
-        # 简化版：后续接入 LLM
-        return f"[Vulcan 执行: {task}]"
-
-    def _summarize_results(self, results: list[Any]) -> str:
-        """汇总多步执行结果"""
-        if not results:
-            return "执行完成，无结果"
-        if len(results) == 1:
-            return str(results[0])
-        return "\n".join([f"步骤 {i+1}: {r}" for i, r in enumerate(results)])
