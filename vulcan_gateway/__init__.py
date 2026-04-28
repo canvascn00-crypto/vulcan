@@ -6,7 +6,6 @@ Each adapter is wrapped to route messages to VulcanAgent.
 """
 
 from .adapters import (
-    PlatformManager,
     VulcanAdapterMixin,
     create_vulcan_adapter,
     StubAdapter,

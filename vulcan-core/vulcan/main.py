@@ -2,13 +2,25 @@
 Vulcan FastAPI 主服务
 """
 
+import sys
+from pathlib import Path
+
+# Ensure vulcan_gateway (messaging platform hub) is on the path
+_vulcan_gateway_path = Path(__file__).resolve().parents[2] / "vulcan_gateway"
+if _vulcan_gateway_path.exists() and str(_vulcan_gateway_path) not in sys.path:
+    sys.path.insert(0, str(_vulcan_gateway_path.parent))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 import asyncio
+import logging
 import uuid
+
+# Setup basic logging for shutdown sequence
+_log = logging.getLogger("vulcan.main")
 
 from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
 from vulcan.agent.task_queue import TaskQueue
@@ -102,16 +114,21 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
+    _log.info("Vulcan shutting down...")
     try:
         from vulcan.a2a import get_agent_pool
         pool = get_agent_pool()
         await pool.unregister("vulcan-primary")
-    except Exception:
-        pass
+        _log.debug("Agent pool unregister complete")
+    except Exception as e:
+        _log.warning(f"Failed to unregister agent: {e}")
     if gateway_integration:
+        _log.debug("Stopping gateway integration")
         await gateway_integration.stop()
     if agent:
+        _log.debug("Shutting down VulcanAgent")
         await agent.shutdown()
+    _log.info("Vulcan shutdown complete")
 
 
 # App

@@ -88,6 +88,36 @@ export interface DashboardStats {
   uptime_seconds: number
 }
 
+// ─── Multi-Agent Types (mirrored from components/multiagent/types) ─────────────
+
+export interface PoolStats {
+  total_agents: number
+  idle: number
+  busy: number
+  streaming: number
+  total_delegated_tasks: number
+  active_delegated: number
+  agents: AgentInfo[]
+}
+
+export interface AgentInfo {
+  id: string; name: string; version: string
+  status: 'idle' | 'busy' | 'streaming' | 'offline'
+  role: string; roleLabel: string; capabilities: string[]; tools: string[]
+  description: string; endpoint?: string; tags: string[]
+  maxConcurrentTasks: number; last_seen: string; avatar?: string
+  model: string; channel: string; currentTask?: string
+  uptimeSeconds?: number; tokenUsage?: { input: number; output: number }
+  trustLevel: 'builtin' | 'trusted' | 'community'
+}
+
+export interface DelegatedTask {
+  task_id: string; thread_id: string; goal: string
+  proposer: string; assignee: string
+  status: 'proposed' | 'in_progress' | 'completed' | 'failed'
+  priority: number; created_at: string; progress_steps: string[]
+}
+
 // ─── API Methods ─────────────────────────────────────────────────────────────
 
 export const api = {
@@ -138,7 +168,7 @@ export const api = {
   },
 
   // A2A Multi-Agent
-  a2aStatus: () => request<any>('/a2a/status'),
+  a2aStatus: () => request<PoolStats>('/a2a/status'),
   a2aDelegate: (body: {
     goal: string
     assignee?: string
@@ -149,13 +179,13 @@ export const api = {
     timeout_seconds?: number
     proposer?: string
     thread_id?: string
-  }) => request<any>('/a2a/tasks/delegate', {
+  }) => request<{ task_id: string }>('/a2a/tasks/delegate', {
     method: 'POST',
     body: JSON.stringify(body),
   }),
-  a2aDelegatedTasks: () => request<{ tasks: any[] }>('/a2a/tasks/delegated'),
+  a2aDelegatedTasks: () => request<{ tasks: DelegatedTask[] }>('/a2a/tasks/delegated'),
   a2aCancelTask: (taskId: string) =>
-    request<any>(`/a2a/tasks/delegated/${taskId}/complete`, {
+    request<{ ok: boolean }>(`/a2a/tasks/delegated/${taskId}/complete`, {
       method: 'POST',
       body: JSON.stringify({ error: 'Cancelled by orchestrator' }),
     }),
