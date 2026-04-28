@@ -72,7 +72,15 @@ function Invoke-Install {
         npm install --legacy-peer-deps 2>$null
         Pop-Location
 
-        Write-Host "[5/5] 完成！运行 .\deploy.ps1 -Action start 启动" -ForegroundColor Green
+        Write-Host "[5/5] 完成！" -ForegroundColor Green
+
+        # 自动启动配置向导
+        Write-Host ""
+        Write-Host "[*] 自动启动配置向导..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 1
+        Push-Location "$ProjectRoot"
+        python scripts/wizard.py
+        Pop-Location
     }
 }
 

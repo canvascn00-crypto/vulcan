@@ -50,7 +50,10 @@ do_install() {
         echo -e "${YELLOW}[3/4] 拉取依赖容器...${NC}"
         docker-compose pull
 
-        echo -e "${GREEN}[4/4] 完成！运行 ./deploy.sh start 启动${NC}"
+        echo -e "${GREEN}[4/4] 安装完成！${NC}"
+        echo -e "${CYAN}[*] 自动启动配置向导...${NC}"
+        sleep 1
+        cd "$PROJECT_ROOT" && python3 scripts/wizard.py
     else
         echo -e "${YELLOW}[2/6] 检查 Python 3.11+ ...${NC}"
         if command -v python3 >/dev/null 2>&1; then
@@ -76,7 +79,10 @@ do_install() {
         cd "$PROJECT_ROOT/vulcan-webui"
         npm install --legacy-peer-deps
 
-        echo -e "${GREEN}✅ 完成！运行 ./deploy.sh start 启动${NC}"
+        echo -e "${GREEN}[6/6] 安装完成！${NC}"
+        echo -e "${CYAN}[*] 自动启动配置向导...${NC}"
+        sleep 1
+        cd "$PROJECT_ROOT" && python3 scripts/wizard.py
     fi
 }
 
