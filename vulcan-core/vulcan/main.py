@@ -19,6 +19,7 @@ from vulcan.auth.routes import router as auth_router
 from vulcan.memory.mempalace_routes import router as mempalace_router
 from vulcan.models.routes import router as models_router
 from vulcan.experts.routes import router as experts_router
+from vulcan.commands.routes import router as commands_router
 from vulcan.auth.rbac import create_api_key, Role
 
 # Gateway integration (lazy import to avoid circular dependency)
@@ -133,6 +134,9 @@ app.include_router(models_router)
 
 # Expert system router (100 AI experts + intent + decomposition + orchestration)
 app.include_router(experts_router)
+
+# Global built-in commands router (31 universal commands)
+app.include_router(commands_router)
 
 # CORS
 app.add_middleware(

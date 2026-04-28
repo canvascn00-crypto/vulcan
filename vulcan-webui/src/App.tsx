@@ -8,7 +8,6 @@ import ModelsPage from '@/pages/ModelsPage'
 import AgentsPage from '@/pages/AgentsPage'
 import MultiAgentPage from '@/pages/MultiAgentPage'
 import DashboardPage from '@/pages/DashboardPage'
-import WechatPage from '@/pages/WechatPage'
 import SettingsPage from '@/pages/SettingsPage'
 import ObservabilityPage from '@/pages/ObservabilityPage'
 import EvolverPage from '@/pages/EvolverPage'
@@ -17,6 +16,7 @@ import ShieldPage from '@/pages/ShieldPage'
 import DevtoolsPage from '@/pages/DevtoolsPage'
 import OptimizerPage from '@/pages/OptimizerPage'
 import ExpertPage from './pages/ExpertPage'
+import CommandsPage from './pages/CommandsPage'
 
 export default function App() {
   return (
@@ -28,10 +28,10 @@ export default function App() {
         <Route path="skills" element={<SkillsPage />} />
         <Route path="memory" element={<MemoryPage />} />
         <Route path="expert" element={<ExpertPage />} />
+        <Route path="commands" element={<CommandsPage />} />
         <Route path="models" element={<ModelsPage />} />
         <Route path="agents" element={<MultiAgentPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="wechat" element={<WechatPage />} />
         <Route path="settings" element={<SettingsPage />} />
         {/* 新增模块 */}
         <Route path="observability" element={<ObservabilityPage />} />

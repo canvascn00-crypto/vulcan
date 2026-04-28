@@ -39,7 +39,7 @@ export default function MemoryPage() {
   const [search, setSearch] = useState('')
   const [entries, setEntries] = useState<MemoryEntry[]>([
     { id: '1', layer: 'long-term', content: '用户偏好：微信会话直接操作，简短回复，不需要多余解释', timestamp: '2026-04-28T10:00:00Z', importance: 5, recall_count: 42 },
-    { id: '2', layer: 'long-term', content: '公众号 AppID: wx25631adbd12cbc76，已跑通 wechat-mp-article-pipeline', timestamp: '2026-04-28T09:30:00Z', importance: 5, recall_count: 28 },
+    { id: '2', layer: 'long-term', content: 'Vulcan 全局指令系统已内置，支持 /命令 触发（查看 commands 页）', timestamp: '2026-04-28T09:30:00Z', importance: 5, recall_count: 28 },
     { id: '3', layer: 'short-term', content: '当前 VPN provider: rioLU/riolu01.link，df.dawnloadai.com:8443 地府GLM', timestamp: '2026-04-28T14:00:00Z', importance: 3, recall_count: 5 },
     { id: '4', layer: 'short-term', content: 'Polymarket Bot 项目在 120.48.14.185:8099，ETH链USDC跨链Polygon问题未解决', timestamp: '2026-04-28T15:00:00Z', importance: 2, recall_count: 2 },
     { id: '5', layer: 'ephemeral', content: '当前会话：Vulcan Phase 3 WebUI 开发中', timestamp: '2026-04-28T18:00:00Z', importance: 1, recall_count: 1 },

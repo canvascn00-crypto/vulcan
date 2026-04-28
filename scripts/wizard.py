@@ -279,9 +279,7 @@ def step_llm_config() -> dict:
 
 # ─── 第3步：配置消息渠道 ──────────────────────────────────────────────────────
 CHANNELS = [
-    ("微信 WeChat", "微信公众号 +草稿箱发布", False),
     ("Telegram Bot", "Telegram Bot 消息收发", False),
-    ("微信客服（接口）", "微信客服消息 API", False),
     ("飞书 Feishu", "飞书机器人 + 消息", False),
     ("Slack", "Slack App 消息", False),
     ("跳过", "暂不配置渠道", True),
@@ -332,21 +330,7 @@ def configure_channel(channel_name: str) -> dict:
     """交互式配置单个渠道"""
     cfg = {"type": channel_name, "enabled": True}
 
-    if "微信" in channel_name and "客服" not in channel_name:
-        # 微信公众号
-        app_id = input_("AppID")
-        app_secret = input_("AppSecret", password=True)
-        token = input_("Token（微信公众号后台设置）")
-        aes_key = input_("EncodingAESKey（可选）")
-        cfg.update({
-            "app_id": app_id,
-            "app_secret": app_secret,
-            "token": token,
-            "aes_key": aes_key,
-        })
-        print(c(f"  ✓ 微信公众号配置完成", 'GREEN'))
-
-    elif "Telegram" in channel_name:
+    if "Telegram" in channel_name:
         bot_token = input_("Bot Token（@BotFather 获取）")
         chat_id = input_("Chat ID（可选，私聊则留空）")
         cfg.update({"bot_token": bot_token, "chat_id": chat_id})
