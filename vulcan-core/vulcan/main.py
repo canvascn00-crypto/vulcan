@@ -14,6 +14,7 @@ from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
 from vulcan.agent.task_queue import TaskQueue
 from vulcan.agent.observability.logger import VulcanLogger, LogLevel
 from vulcan.skills import skills_router
+from vulcan.a2a.routes import router as a2a_router
 
 # Gateway integration (lazy import to avoid circular dependency)
 gateway_integration: Optional["GatewayIntegration"] = None
@@ -51,9 +52,34 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to start gateway: {e}")
 
+    # Register this agent with the A2A pool
+    try:
+        from vulcan.a2a import AgentCard, AgentStatus, get_agent_pool
+        pool = get_agent_pool()
+        my_card = AgentCard(
+            name="vulcan-primary",
+            version="0.1.0",
+            status=AgentStatus.IDLE,
+            role="orchestrator",
+            capabilities=["reasoning", "tool_use", "planning", "code", "web", "memory"],
+            tools=[],  # filled by VulcanToolRegistry at runtime
+            description="Primary Vulcan orchestrator agent",
+            tags=["vulcan", "primary", "orchestrator"],
+        )
+        await pool.register(my_card)
+        logger.info("A2A AgentPool: registered 'vulcan-primary'")
+    except Exception as e:
+        logger.warn(f"A2A init failed (non-fatal): {e}")
+
     yield
 
     # Shutdown
+    try:
+        from vulcan.a2a import get_agent_pool
+        pool = get_agent_pool()
+        await pool.unregister("vulcan-primary")
+    except Exception:
+        pass
     if gateway_integration:
         await gateway_integration.stop()
     if agent:
@@ -65,6 +91,9 @@ app = FastAPI(title="Vulcan API", version="0.1.0", lifespan=lifespan)
 
 # Skills router (SkillForge + Marketplace)
 app.include_router(skills_router)
+
+# A2A multi-agent router
+app.include_router(a2a_router)
 
 # CORS
 app.add_middleware(

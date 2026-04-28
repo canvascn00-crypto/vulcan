@@ -6,6 +6,7 @@ import SkillsPage from '@/pages/SkillsPage'
 import MemoryPage from '@/pages/MemoryPage'
 import ModelsPage from '@/pages/ModelsPage'
 import AgentsPage from '@/pages/AgentsPage'
+import MultiAgentPage from '@/pages/MultiAgentPage'
 import DashboardPage from '@/pages/DashboardPage'
 import WechatPage from '@/pages/WechatPage'
 import SettingsPage from '@/pages/SettingsPage'
@@ -26,7 +27,7 @@ export default function App() {
         <Route path="skills" element={<SkillsPage />} />
         <Route path="memory" element={<MemoryPage />} />
         <Route path="models" element={<ModelsPage />} />
-        <Route path="agents" element={<AgentsPage />} />
+        <Route path="agents" element={<MultiAgentPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="wechat" element={<WechatPage />} />
         <Route path="settings" element={<SettingsPage />} />

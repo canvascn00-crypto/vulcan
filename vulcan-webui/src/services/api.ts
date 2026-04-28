@@ -133,4 +133,27 @@ export const api = {
       uptime_seconds: 0,
     }
   },
+
+  // A2A Multi-Agent
+  a2aStatus: () => request<any>('/a2a/status'),
+  a2aDelegate: (body: {
+    goal: string
+    assignee?: string
+    role?: string
+    priority?: number
+    description?: string
+    tools?: string[]
+    timeout_seconds?: number
+    proposer?: string
+    thread_id?: string
+  }) => request<any>('/a2a/tasks/delegate', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }),
+  a2aDelegatedTasks: () => request<{ tasks: any[] }>('/a2a/tasks/delegated'),
+  a2aCancelTask: (taskId: string) =>
+    request<any>(`/a2a/tasks/delegated/${taskId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ error: 'Cancelled by orchestrator' }),
+    }),
 }
