@@ -2,10 +2,11 @@
 Vulcan FastAPI 主服务
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Dict, List, Optional
 import asyncio
 import uuid
 
@@ -13,8 +14,42 @@ from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
 from vulcan.agent.task_queue import TaskQueue
 from vulcan.agent.observability.logger import VulcanLogger, LogLevel
 
+# Gateway integration (lazy import to avoid circular dependency)
+gateway_integration: Optional["GatewayIntegration"] = None
+
+
+# --- Lifespan ---
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage VulcanAgent and Gateway lifecycle."""
+    global agent, gateway_integration
+    from vulcan.gateway_integration import gateway_integration as _gi
+    from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
+
+    config = AgentConfig(enable_observability=True, enable_memory=True)
+    agent = VulcanAgent(config)
+    logger.info("Vulcan API started")
+
+    # Start the messaging gateway (all 20 platforms)
+    try:
+        gateway_integration = await _gi(vulcan_agent=agent)
+        logger.info("Vulcan Gateway started")
+    except Exception as e:
+        logger.error("Failed to start gateway: %s", e)
+
+    yield
+
+    # Shutdown
+    if gateway_integration:
+        await gateway_integration.stop()
+    if agent:
+        await agent.shutdown()
+
+
 # App
-app = FastAPI(title="Vulcan API", version="0.1.0")
+app = FastAPI(title="Vulcan API", version="0.1.0", lifespan=lifespan)
 
 # CORS
 app.add_middleware(
@@ -25,12 +60,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Globals
+# Globals (set in lifespan)
 agent: Optional[VulcanAgent] = None
 logger = VulcanLogger(name="VulcanAPI", level=LogLevel.INFO)
 
 
 # --- Request/Response Models ---
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -48,30 +84,17 @@ class TaskStatusRequest(BaseModel):
     task_id: str
 
 
-# --- Lifespan ---
-
-@app.on_event("startup")
-async def startup():
-    global agent
-    config = AgentConfig(
-        enable_observability=True,
-        enable_memory=True,
-    )
-    agent = VulcanAgent(config)
-    logger.info("Vulcan API started")
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    if agent:
-        await agent.shutdown()
-
-
 # --- Routes ---
 
+
 @app.get("/health")
-async def health():
-    return {"status": "ok", "service": "vulcan", "version": "0.1.0"}
+async def health() -> Dict[str, Any]:
+    return {
+        "status": "ok",
+        "service": "vulcan",
+        "version": "0.1.0",
+        "gateway": gateway_integration.is_running if gateway_integration else False,
+    }
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -90,7 +113,7 @@ async def chat(req: ChatRequest):
 
 
 @app.get("/tasks")
-async def list_tasks():
+async def list_tasks() -> List[Dict[str, Any]]:
     if not agent:
         return []
     tasks = await agent.task_queue.list_tasks()
@@ -98,7 +121,7 @@ async def list_tasks():
 
 
 @app.get("/tasks/{task_id}")
-async def get_task(task_id: str):
+async def get_task(task_id: str) -> Dict[str, Any]:
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
     task = await agent.task_queue.get_task(task_id)
@@ -108,7 +131,7 @@ async def get_task(task_id: str):
 
 
 @app.delete("/tasks/{task_id}")
-async def cancel_task(task_id: str):
+async def cancel_task(task_id: str) -> Dict[str, str]:
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
     ok = await agent.task_queue.cancel_task(task_id)
@@ -118,7 +141,7 @@ async def cancel_task(task_id: str):
 
 
 @app.get("/tools")
-async def list_tools():
+async def list_tools() -> Dict[str, Any]:
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
     return {
@@ -127,26 +150,62 @@ async def list_tools():
     }
 
 
+# --- Gateway Routes ---
+
+
+@app.get("/gateway/status")
+async def gateway_status() -> Dict[str, Any]:
+    """Get status of all messaging platform adapters."""
+    if not gateway_integration:
+        return {"running": False, "platforms": []}
+    return {
+        "running": gateway_integration.is_running,
+        "platforms": gateway_integration.manager.list_adapters(),
+    }
+
+
+@app.post("/gateway/send")
+async def gateway_send(req: ChatRequest) -> Dict[str, Any]:
+    """
+    Send a message via a specific platform.
+    Use delivery target format: "platform:chat_id" or just "platform" for home channel.
+    """
+    if not gateway_integration:
+        raise HTTPException(status_code=503, detail="Gateway not initialized")
+
+    delivery = req.session_id or "local"
+    platform, chat_id = gateway_integration.manager.resolve_destination(delivery)
+    result = await gateway_integration.send_message(platform, chat_id, req.message)
+    return {"ok": result.success if result else False, "platform": platform, "chat_id": chat_id}
+
+
+@app.get("/gateway/home-channels")
+async def list_home_channels() -> List[Dict[str, Any]]:
+    """List all configured home channels."""
+    if not gateway_integration:
+        return []
+    result = []
+    for platform_name in gateway_integration.manager.config.platforms:
+        home = gateway_integration.manager.get_home_channel(platform_name)
+        if home:
+            result.append({"platform": home[0], "chat_id": home[1]})
+    return result
+
+
 # --- WebSocket for streaming ---
+
 
 class ConnectionManager:
     def __init__(self):
-        self.active: dict[str, WebSocket] = {}
-
-    async def connect(self, ws: WebSocket, client_id: str):
-        await ws.accept()
-        self.active[client_id] = ws
-
-    def disconnect(self, client_id: str):
-        self.active.pop(client_id, None)
+        self.active: Dict[str, WebSocket] = {}
 
 
-manager = ConnectionManager()
+_ws_manager = ConnectionManager()
 
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(ws: WebSocket, client_id: str):
-    await manager.connect(ws, client_id)
+    await _ws_manager.connect(ws, client_id)
     try:
         while True:
             data = await ws.receive_json()
@@ -162,4 +221,4 @@ async def websocket_endpoint(ws: WebSocket, client_id: str):
                 "trace_id": result.get("trace_id", ""),
             })
     except WebSocketDisconnect:
-        manager.disconnect(client_id)
+        _ws_manager.disconnect(client_id)

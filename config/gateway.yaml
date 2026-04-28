@@ -1,0 +1,272 @@
+# Vulcan Gateway 配置
+# 路径: ~/.vulcan/gateway.yaml
+# 启动后自动加载所有已启用(enabled: true)的平台
+
+vulcan_home: ~/.vulcan
+hermes_home: ~/.hermes
+streaming_enabled: true
+log_level: INFO
+
+# 会话策略
+session_policy:
+  mode: both          # "daily" | "idle" | "both" | "none"
+  at_hour: 4          # 每天重置时间（0-23）
+  idle_minutes: 1440  # 空闲N分钟后重置（默认24小时）
+  notify: true        # 自动重置时通知用户
+
+# 平台配置
+platforms:
+  # ============================================================
+  # 微信（iLink Bot API）- 已在 Hermes 配置，可直接启用
+  # ============================================================
+  weixin:
+    enabled: true
+    extra:
+      # iLink 凭证（从 Hermes .env 继承）
+      ilink_token: "${ILINK_TOKEN}"    # 从环境变量读取
+      ilink_app_id: "bot"
+      # 长轮询超时（毫秒）
+      long_poll_timeout_ms: 35000
+      # 消息去重 TTL（秒）
+      dedup_ttl_seconds: 300
+      # 每用户独立会话
+      group_sessions_per_user: true
+    home_channel:
+      platform: weixin
+      chat_id: "${WECHAT_HOME_CHAT_ID}"
+      name: "慕斯小叶"
+
+  # ============================================================
+  # Telegram Bot
+  # ============================================================
+  telegram:
+    enabled: false
+    token: "${TELEGRAM_BOT_TOKEN}"   # BotFather 获取
+    reply_to_mode: "first"             # "first" | "all" | "off"
+    extra:
+      channel_prompts: {}              # 按 chat_id 设置提示词
+    # home_channel:
+    #   platform: telegram
+    #   chat_id: "YOUR_CHAT_ID"
+    #   name: "Home"
+
+  # ============================================================
+  # Discord Bot
+  # ============================================================
+  discord:
+    enabled: false
+    token: "${DISCORD_BOT_TOKEN}"
+    extra:
+      require_mention: true            # 是否需要 @机器人
+      auto_thread: true                # 自动创建线程
+      reactions: true                  # 启用反应
+    # home_channel:
+    #   platform: discord
+    #   chat_id: "123456789"
+    #   name: "Home"
+
+  # ============================================================
+  # WhatsApp
+  # ============================================================
+  whatsapp:
+    enabled: false
+    extra:
+      phone_number_id: "${WHATSAPP_PHONE_ID}"
+      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
+      access_token: "${WHATSAPP_ACCESS_TOKEN}"
+    # home_channel:
+    #   platform: whatsapp
+    #   chat_id: "+1234567890"
+    #   name: "Home"
+
+  # ============================================================
+  # Slack Bot
+  # ============================================================
+  slack:
+    enabled: false
+    token: "${SLACK_BOT_TOKEN}"
+    extra:
+      signing_secret: "${SLACK_SIGNING_SECRET}"
+      channel_prompts: {}
+    # home_channel:
+    #   platform: slack
+    #   chat_id: "C0123456789"
+    #   name: "Home"
+
+  # ============================================================
+  # Signal Bot
+  # ============================================================
+  signal:
+    enabled: false
+    extra:
+      signal_cli_path: "signal-cli"
+      phone_number: "${SIGNAL_PHONE_NUMBER}"
+    # home_channel:
+    #   platform: signal
+    #   chat_id: "+1234567890"
+    #   name: "Home"
+
+  # ============================================================
+  # Mattermost Bot
+  # ============================================================
+  mattermost:
+    enabled: false
+    extra:
+      base_url: "${MATTERMOST_URL}"
+      token: "${MATTERMOST_TOKEN}"
+    # home_channel:
+    #   platform: mattermost
+    #   chat_id: "channel_id"
+    #   name: "Home"
+
+  # ============================================================
+  # Matrix/Element Bot
+  # ============================================================
+  matrix:
+    enabled: false
+    extra:
+      homeserver: "${MATRIX_HOMESERVER}"
+      token: "${MATRIX_TOKEN}"
+      user_id: "${MATRIX_USER_ID}"
+    # home_channel:
+    #   platform: matrix
+    #   chat_id: "@user:matrix.org"
+    #   name: "Home"
+
+  # ============================================================
+  # DingTalk 钉钉
+  # ============================================================
+  dingtalk:
+    enabled: false
+    extra:
+      client_id: "${DINGTALK_CLIENT_ID}"
+      client_secret: "${DINGTALK_CLIENT_SECRET}"
+    # home_channel:
+    #   platform: dingtalk
+    #   chat_id: "chat_id"
+    #   name: "Home"
+
+  # ============================================================
+  # FeiShu 飞书
+  # ============================================================
+  feishu:
+    enabled: false
+    extra:
+      app_id: "${FEISHU_APP_ID}"
+      app_secret: "${FEISHU_APP_SECRET}"
+    # home_channel:
+    #   platform: feishu
+    #   chat_id: "oc_xxx"
+    #   name: "Home"
+
+  # ============================================================
+  # 企业微信 WeCom
+  # ============================================================
+  wecom:
+    enabled: false
+    extra:
+      corp_id: "${WECOM_CORP_ID}"
+      corp_secret: "${WECOM_CORP_SECRET}"
+      agent_id: "${WECOM_AGENT_ID}"
+    # home_channel:
+    #   platform: wecom
+    #   chat_id: "chat_id"
+    #   name: "Home"
+
+  # ============================================================
+  # QQ 机器人
+  # ============================================================
+  qqbot:
+    enabled: false
+    extra:
+      adapter_type: "go-cqhttp"       # 或 "none"（无正向 WebSocket）
+      server_url: "http://127.0.0.1:5700"
+    # home_channel:
+    #   platform: qqbot
+    #   chat_id: "123456"
+    #   name: "Home"
+
+  # ============================================================
+  # BlueBubbles (iMessage on macOS)
+  # ============================================================
+  bluebubbles:
+    enabled: false
+    extra:
+      server_url: "${BLUEBUBBLES_URL}"
+      password: "${BLUEBUBBLES_PASSWORD}"
+    # home_channel:
+    #   platform: bluebubbles
+    #   chat_id: "chat_id"
+    #   name: "Home"
+
+  # ============================================================
+  # SMS (Twilio)
+  # ============================================================
+  sms:
+    enabled: false
+    extra:
+      twilio_account_sid: "${TWILIO_ACCOUNT_SID}"
+      twilio_auth_token: "${TWILIO_AUTH_TOKEN}"
+      from_number: "${TWILIO_FROM}"
+    # home_channel:
+    #   platform: sms
+    #   chat_id: "+1234567890"
+    #   name: "Home"
+
+  # ============================================================
+  # Email (SMTP/IMAP)
+  # ============================================================
+  email:
+    enabled: false
+    extra:
+      smtp_host: "${SMTP_HOST}"
+      smtp_port: 587
+      smtp_user: "${SMTP_USER}"
+      smtp_password: "${SMTP_PASSWORD}"
+      imap_host: "${IMAP_HOST}"
+      imap_port: 993
+      imap_user: "${IMAP_USER}"
+      imap_password: "${IMAP_PASSWORD}"
+    # home_channel:
+    #   platform: email
+    #   chat_id: "user@example.com"
+    #   name: "Home"
+
+  # ============================================================
+  # Home Assistant
+  # ============================================================
+  homeassistant:
+    enabled: false
+    extra:
+      base_url: "${HA_BASE_URL}"
+      long_lived_access_token: "${HA_TOKEN}"
+    # home_channel:
+    #   platform: homeassistant
+    #   chat_id: "notify"
+    #   name: "Home"
+
+  # ============================================================
+  # Local API Server
+  # ============================================================
+  api_server:
+    enabled: true
+    extra:
+      host: "127.0.0.1"
+      port: 8643
+      cors_origins: "*"
+    home_channel:
+      platform: api_server
+      chat_id: "local"
+      name: "Local API"
+
+  # ============================================================
+  # Webhook (入站 webhook)
+  # ============================================================
+  webhook:
+    enabled: false
+    extra:
+      secret: "${WEBHOOK_SECRET}"
+    # home_channel:
+    #   platform: webhook
+    #   chat_id: "default"
+    #   name: "Webhook"

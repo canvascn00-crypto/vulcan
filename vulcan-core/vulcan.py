@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Vulcan CLI — 入口文件
-支持: python vulcan.py (启动 API) / python vulcan.py chat (交互式对话)
+
+支持模式:
+  python vulcan.py              # API server (FastAPI + Gateway)
+  python vulcan.py --chat       # 交互式对话
+  python vulcan.py --gateway    # 仅启动 Gateway（无 API）
+  python vulcan.py --port 9000  # 自定义端口
 """
 
 import argparse
@@ -12,17 +17,43 @@ from pathlib import Path
 # Ensure vulcan-core package is importable
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vulcan.main import app
 from vulcan.version import __version__, __brand__, __tagline__
 
 
 def print_banner():
     print(f"""
-╔══════════════════════════════════════╗
+╔═══════════════════════════════════════════╗
 ║   🔥 {__brand__} — {__tagline__}    ║
-║   Version {__version__}                           ║
-╚══════════════════════════════════════╝
+║   Version {__version__}                             ║
+╚═══════════════════════════════════════════╝
     """)
+
+
+async def start_gateway():
+    """Start gateway + agent without FastAPI server."""
+    from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
+    from vulcan.gateway_integration import gateway_integration
+    from vulcan.agent.observability.logger import VulcanLogger, LogLevel
+
+    logger = VulcanLogger(name="Vulcan", level=LogLevel.INFO)
+    config = AgentConfig(enable_observability=True, enable_memory=True)
+    agent = VulcanAgent(config)
+    logger.info("VulcanAgent initialized")
+
+    try:
+        gateway = await gateway_integration(vulcan_agent=agent)
+        logger.info("Vulcan Gateway started — all platforms connected")
+        logger.info("Platforms: %s", gateway.manager.list_adapters())
+
+        # Keep running
+        while True:
+            await asyncio.sleep(3600)
+    except KeyboardInterrupt:
+        logger.info("Shutting down...")
+    finally:
+        await gateway.stop()
+        await agent.shutdown()
+        logger.info("Vulcan stopped")
 
 
 def main():
@@ -31,13 +62,20 @@ def main():
     parser.add_argument("--host", default="0.0.0.0", help="API host (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=8000, help="API port (default: 8000)")
     parser.add_argument("--chat", action="store_true", help="Interactive chat mode")
+    parser.add_argument("--gateway", action="store_true", help="Start gateway only (no API server)")
     parser.add_argument("--model", default="claude-sonnet-4", help="Model to use")
     parser.add_argument("--no-observability", action="store_true", help="Disable observability")
+    parser.add_argument("--log-level", default="INFO", help="Log level")
     args = parser.parse_args()
 
     print_banner()
 
-    if args.chat:
+    if args.gateway:
+        # Gateway-only mode (no FastAPI)
+        print("🔌 Starting Vulcan Gateway (no API server)...\n")
+        asyncio.run(start_gateway())
+
+    elif args.chat:
         # Interactive chat mode
         from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
         config = AgentConfig(
@@ -46,8 +84,8 @@ def main():
         )
         agent = VulcanAgent(config)
         print("🧑 Starting interactive chat. Type 'exit' to quit.\n")
-        while True:
-            try:
+        try:
+            while True:
                 user_input = input("You: ")
                 if user_input.lower() in ("exit", "quit", "q"):
                     break
@@ -55,19 +93,21 @@ def main():
                     continue
                 result = asyncio.run(agent.run_async(user_input))
                 print(f"\nVulcan: {result.get('result', result.get('error', 'No result'))}\n")
-            except KeyboardInterrupt:
-                print("\n\nExiting...")
-                break
+        except KeyboardInterrupt:
+            print("\n\nExiting...")
         print("Goodbye!")
+
     else:
-        # API server mode
+        # API server mode (FastAPI + Gateway integrated via lifespan)
         import uvicorn
+        from vulcan.main import app
         print(f"🚀 Starting Vulcan API server on {args.host}:{args.port}")
+        print(f"📡 Gateway auto-started via lifespan (all platforms)\n")
         uvicorn.run(
             app,
             host=args.host,
             port=args.port,
-            log_level="info",
+            log_level=args.log_level.lower(),
         )
 
 
