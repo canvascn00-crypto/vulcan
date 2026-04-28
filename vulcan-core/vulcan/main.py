@@ -17,6 +17,7 @@ from vulcan.skills import skills_router
 from vulcan.a2a.routes import router as a2a_router
 from vulcan.auth.routes import router as auth_router
 from vulcan.memory.mempalace_routes import router as mempalace_router
+from vulcan.models.routes import router as models_router
 from vulcan.auth.rbac import create_api_key, Role
 
 # Gateway integration (lazy import to avoid circular dependency)
@@ -125,6 +126,9 @@ app.include_router(auth_router)
 
 # MemPalace 4-layer memory router
 app.include_router(mempalace_router)
+
+# Model registry router
+app.include_router(models_router)
 
 # CORS
 app.add_middleware(
