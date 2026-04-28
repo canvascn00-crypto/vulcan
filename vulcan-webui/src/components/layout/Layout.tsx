@@ -50,7 +50,7 @@ const mainNavItems = [
   { key: '/workflow', icon: <RocketOutlined />, label: '工作流' },
   { key: '/skills', icon: <ToolOutlined />, label: '技能市场' },
   { key: '/memory', icon: <DatabaseOutlined />, label: '记忆中心' },
-  { key: '/mempalace', icon: <ApartmentOutlined />, label: '记忆宫殿' },
+  { key: '/expert', icon: <ApartmentOutlined />, label: '专家工作台' },
   { key: '/models', icon: <ApiOutlined />, label: '模型' },
   { key: '/wechat', icon: <WechatOutlined />, label: '微信' },
   { key: '/settings', icon: <SettingOutlined />, label: '设置' },

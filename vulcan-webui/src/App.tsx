@@ -16,7 +16,7 @@ import MultimodalPage from '@/pages/MultimodalPage'
 import ShieldPage from '@/pages/ShieldPage'
 import DevtoolsPage from '@/pages/DevtoolsPage'
 import OptimizerPage from '@/pages/OptimizerPage'
-import MemPalacePage from '@/pages/MemPalacePage'
+import ExpertPage from './pages/ExpertPage'
 
 export default function App() {
   return (
@@ -27,7 +27,7 @@ export default function App() {
         <Route path="workflow" element={<WorkflowPage />} />
         <Route path="skills" element={<SkillsPage />} />
         <Route path="memory" element={<MemoryPage />} />
-        <Route path="mempalace" element={<MemPalacePage />} />
+        <Route path="expert" element={<ExpertPage />} />
         <Route path="models" element={<ModelsPage />} />
         <Route path="agents" element={<MultiAgentPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
