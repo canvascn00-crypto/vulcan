@@ -1,0 +1,14 @@
+{
+  "id": "vulcan-devops",
+  "name": "Vulcan-DevOps",
+  "description": "Vulcan 官方 DevOps 工程师 — Docker/K8s/CI-CD/监控/IaC",
+  "version": "1.0.0",
+  "source": "vulcan-builtin",
+  "category": "devops",
+  "trust": "builtin",
+  "tags": ["DevOps", "Docker", "Kubernetes", "CI/CD", "监控"],
+  "enabled": true,
+  "builtin": true,
+  "icon": "🚀",
+  "author": "Vulcan Team"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "vulcan-coder",
+  "name": "Vulcan-Coder",
+  "description": "Vulcan 官方代码助手 — 代码生成、审查、重构、调试",
+  "version": "1.0.0",
+  "source": "vulcan-builtin",
+  "category": "coding",
+  "trust": "builtin",
+  "tags": ["代码", "编程", "代码审查", "重构"],
+  "enabled": true,
+  "builtin": true,
+  "icon": "💻",
+  "author": "Vulcan Team"
+}

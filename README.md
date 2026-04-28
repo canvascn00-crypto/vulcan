@@ -1,138 +1,181 @@
-# 🔥 Vulcan — 下一代 AI Agent 平台
+# Vulcan — 下一代 AI Agent 平台
 
-> **盗火者**：将 AI 智能之火带给每个人。
-> Vulcan 是通用 AI Agent 平台，继承并超越 Hermes Agent + OpenClaw 的全部能力。
+> **盗火者 · 将 AI 能力传递给每一个人**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://www.python.org/)
+Vulcan 是一个通用的 AI Agent 平台，继承并超越 Hermes Agent + OpenClaw 的所有能力。支持多模型、多 Agent 协作、20+ 消息通道、60+ 工具、内置技能市场。
 
-## ✨ 核心特性
+## 核心特性
 
-| 模块 | 说明 |
-|------|------|
-| 🧠 **双核架构** | Planner（思考）+ Executor（执行），可并行可协作 |
-| 📚 **三层记忆** | 瞬时 → 短期（向量/ChromaDB）→ 长期（SOUL.md）|
-| 🔗 **60+ 工具** | 继承 Hermes 全部工具，新增工具链自动编排 |
-| 🌐 **28 渠道** | 继承 Hermes 全部消息渠道（微信/TG/Discord/...）|
-| 🤝 **A2A 总线** | 多 Agent 委托、查询、协作、投票 |
-| 🔭 **可观测性** | 结构化日志 + 全链路 trace_id + 指标看板 |
-| 🧬 **自我进化** | 自动分析失败案例，驱动 Agent 自我优化 |
-| 🎤 **多模态** | 语音 I/O、视觉理解、实时摄像头交互 |
-| 🛡️ **安全模块** | PII 检测与脱敏、敏感操作二次确认 |
-| 🧪 **DevTools** | MCP Server 管理、API Playground |
-| 📦 **模型优化** | GGUF 量化、vLLM Serving、批量推理 |
+- 🔥 **双核架构** — Planner（规划）+ Executor（执行），异步协作
+- 🌐 **全通道支持** — 20+ 消息通道：WeChat、Telegram、Discord、飞书、微信公众号等
+- 🛠️ **60+ 工具** — 继承 Hermes 全部工具集，自动发现
+- 💎 **技能市场** — 97+ 预装技能（4 Vulcan 内置 + 93 Hermes 继承），支持 GitHub/Marketplace 扩展
+- 🤖 **多 Agent 协作** — A2A 协议，Agent 间任务委托、结果聚合、共享内存
+- 🔑 **API Key + RBAC** — 外部应用接入鉴权，4 级角色权限
+- 📊 **可观测性** — 日志、追踪、指标、告警
+- 🚀 **一键部署** — Docker Compose，单机 5 分钟启动
 
-## 🏗️ 架构
+## 快速开始
 
-```
-Vulcan Platform
-├── vulcan-core/       Python 后端（FastAPI + 双核 Agent）
-├── vulcan-webui/      React/TS 前端（Vite + Ant Design）
-├── vulcan-api/        API 路由层
-├── vulcan-gateway/    消息网关（28 渠道）
-├── vulcan-skills/     技能市场
-└── docs/              文档
-```
-
-## 🚀 快速启动
-
-### Docker Compose（一键启动）
+### Docker 部署（推荐）
 
 ```bash
+git clone https://github.com/your-org/vulcan.git
+cd vulcan
 cp .env.example .env
-# 编辑 .env 填入你的 API Key
+# 编辑 .env 填入必要的 API keys
 docker-compose up -d
 ```
 
-访问 **http://localhost:3000**
+访问 `http://localhost:3000` 打开 WebUI。
 
 ### 本地开发
 
 ```bash
 # 后端
 cd vulcan-core
-python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m uvicorn vulcan.main:app --reload --port 8000
+python vulcan.py --port 8000
 
-# 前端
+# 前端（另一个终端）
 cd vulcan-webui
 npm install
 npm run dev
 ```
 
-## 📦 模块一览
+### 环境变量
 
-### 2.1 双核 Agent 引擎
-- `Planner`: 任务理解、步骤分解、模型选择、结果验证
-- `Executor`: 工具调用、步骤执行、错误处理
-- 两者通过消息队列通信，支持并行执行
+```bash
+# .env
+VULCAN_HOST=0.0.0.0
+VULCAN_PORT=8000
+VULCAN_WEBUI_PORT=3000
+LLM_PROVIDER=openai  # 或 anthropic/oprouter/custom
+LLM_API_KEY=sk-...
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o
+LLM_API_KEY_AUTH=false  # true = 所有 API 调用需要 X-Vulcan-Key header
 
-### 2.2 统一记忆层
-- **瞬时记忆**: 当前会话上下文（KV store in Redis）
-- **短期记忆**: 向量检索（ChromaDB），可跨会话
-- **长期记忆**: SOUL.md 人格配置 + 知识图谱（PostgreSQL）
+# Hermes 兼容（从 Hermes Agent 继承）
+HERMES_GATEWAY_DIR=/root/.hermes/gateway
+```
 
-### 2.3 工具系统
-- 继承 Hermes 60+ 工具（browser/terminal/mcp/...）
-- 新增：工具链自动编排、API 自动发现、速率限制
+## 架构
 
-### 2.4 工作流引擎
-- DAG 可视化编排（继承 Hermes 改进）
-- 支持条件分支、循环、并行执行
-- 持久化到 PostgreSQL
+```
+┌─────────────────────────────────────────────┐
+│              Vulcan WebUI (React)             │
+│   14 pages: Chat/Dashboard/Models/Skills     │
+│   Multi-Agent/Memory/WeChat/Gateway/Settings  │
+└────────────────┬──────────────────────────────┘
+                 │ REST / WebSocket
+┌────────────────▼──────────────────────────────┐
+│            Vulcan API Server (FastAPI)         │
+│  /chat  /tasks  /skills  /a2a  /gateway  /auth  │
+│  /api-keys  /models  /workflows  /agents        │
+└───┬──────────┬──────────┬──────────┬─────────┘
+    │          │          │          │
+┌───▼───┐ ┌───▼───┐ ┌───▼───┐ ┌───▼───────────┐
+│Planner │ │Executor│ │Skill  │ │  A2A Agent   │
+│+Exec   │ │       │ │Forge  │ │    Pool      │
+└───┬───┘ └───┬───┘ └───┬───┘ └───────────────┘
+    │          │          │
+┌───▼──────────▼──────────▼───────────────┐
+│      UnifiedMemory (3-layer)              │
+│  Ephemeral · ShortTerm · LongTerm        │
+└──────────────────────────────────────────┘
+    │
+┌───▼───────────────────────────────────────┐
+│       Vulcan Gateway (Hermes-compatible)   │
+│  WeChat · Telegram · Discord · 飞书        │
+│  WhatsApp · Line · Slack · QQ · ...        │
+└───────────────────────────────────────────┘
+    │
+┌───▼───────────────────────────────────────┐
+│         Vulcan Tool Registry               │
+│  60+ tools auto-discovered from Hermes     │
+└───────────────────────────────────────────┘
+```
 
-### 2.5 A2A 消息总线
-- Agent 间委托、查询、通知、协作、投票
-- 支持多 Agent 协作群聊
+## 目录结构
 
-### 2.6 WebUI
-- React 18 + TypeScript + Vite
-- Ant Design 5 + Tailwind CSS
-- 14 个功能页面（对话/工作流/技能/记忆/模型/多Agent/微信/监控/可观测性/自我进化/多模态/安全/DevTools/优化器）
+```
+vulcan/
+├── vulcan-core/              # Python 后端
+│   └── vulcan/
+│       ├── agent/            # 双核 Agent（Planner/Executor/TaskQueue）
+│       ├── skills/           # SkillForge（4内置+93继承+市场）
+│       ├── a2a/              # A2A 多Agent协议
+│       ├── gateway/          # Hermes 兼容网关
+│       ├── auth/             # API Key + RBAC
+│       ├── observability/    # 日志/追踪/指标
+│       ├── memory/           # 统一内存
+│       ├── models/           # 模型管理
+│       └── skills/bundles/   # Vulcan 内置技能
+│           ├── vulcan-coder/
+│           ├── vulcan-researcher/
+│           ├── vulcan-architect/
+│           └── vulcan-devops/
+├── vulcan-webui/             # React 前端
+│   └── src/pages/            # 14 个页面
+├── docker/                   # Docker 配置
+├── config/                   # 配置文件
+├── SPEC.md                   # 完整规格文档
+├── README.md
+└── Makefile
+```
 
-### 2.7 Skill 系统
-- SkillHub 集成（搜索/安装/管理）
-- 支持 Webhook 触发、定时任务
-- Python + MCP 协议支持
+## API 接口
 
-### 2.8 Skill 市场
-- SkillForge UI + CLI
-- 社区技能评分 + 排行
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/chat` | POST | 发送对话请求 |
+| `/tasks/{id}` | GET | 查询任务状态 |
+| `/tasks/{id}/cancel` | POST | 取消任务 |
+| `/skills` | GET | 列出所有技能 |
+| `/skills/{id}/enable` | POST | 启用技能 |
+| `/skills/{id}/disable` | POST | 禁用技能 |
+| `/a2a/agents` | GET | 列出所有 Agent |
+| `/a2a/delegation/delegate` | POST | 委托任务 |
+| `/api-keys` | GET | 列出 API Keys |
+| `/api-keys` | POST | 创建 API Key |
+| `/gateway/status` | GET | Gateway 状态 |
 
-### 2.9 可观测性模块
-- 结构化 JSON 日志 + trace_id 全链路追踪
-- Prometheus 指标 + Grafana 看板集成
-- 实时会话录制与回放
+## 技能系统
 
-### 2.10 自我进化模块
-- 失败案例自动归因分析
-- 驱动 Skill 更新 / Prompt 优化
-- 定期自我评估（类 RL）
+Vulcan 继承 97+ 技能，分类：
 
-### 2.11 多模态交互
-- Whisper 语音识别（输入）
-- TTS 语音合成（输出）
-- 视觉理解（GPT-4V / LLaVA）
-- 实时摄像头交互
+- **Vulcan 内置** (4): vulcan-coder, vulcan-researcher, vulcan-architect, vulcan-devops
+- **Hermes 继承** (93): article-card-gen, wechat-mp-article-pipeline, email-client, 等
+- **Marketplace**: 社区技能市场（可从 GitHub URL 安装）
 
-### 2.12 安全与隐私模块
-- PII 自动检测与脱敏
-- 敏感操作二次确认
-- 数据加密（AES-256-GCM）
-- 审计日志完整记录
+## 配置
 
-### 2.13 开发者工具链
-- MCP Server 可视化管理
-- API Playground（内测版）
-- 本地热重载调试
+### 消息通道（Gateway）
 
-### 2.14 模型压缩与优化
-- GGUF 量化（4-bit / 8-bit）
-- vLLM PagedAttention 高吞吐 Serving
-- TensorRT-LLM 加速（可选）
-- 批量推理优化
+Vulcan Gateway 完全兼容 Hermes Agent 的 `config.yaml` 平台配置：
 
-## 📄 许可证
+```yaml
+# config/gateway.yaml
+platforms:
+  weixin:
+    enabled: true
+    app_id: wx_xxx
+    app_secret: xxx
+  telegram:
+    enabled: true
+    bot_token: xxx
+```
 
-MIT License — Vulcan Team 2025
+### RBAC 角色
+
+| 角色 | 权限 |
+|------|------|
+| `admin` | 全部权限 |
+| `operator` | 聊天、任务、技能 |
+| `readonly` | 只读 |
+| `external` | 仅允许的端点 |
+
+## License
+
+MIT

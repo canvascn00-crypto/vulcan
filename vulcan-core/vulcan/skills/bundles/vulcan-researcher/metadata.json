@@ -1,0 +1,14 @@
+{
+  "id": "vulcan-researcher",
+  "name": "Vulcan-Researcher",
+  "description": "Vulcan 官方研究助手 — 深度调研、文献检索、多源分析、技术报告",
+  "version": "1.0.0",
+  "source": "vulcan-builtin",
+  "category": "research",
+  "trust": "builtin",
+  "tags": ["研究", "调研", "论文", "搜索"],
+  "enabled": true,
+  "builtin": true,
+  "icon": "🔬",
+  "author": "Vulcan Team"
+}

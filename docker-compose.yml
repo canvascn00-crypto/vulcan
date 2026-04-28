@@ -10,16 +10,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - VULCAN_API_KEY=${VULCAN_API_KEY:-dev-key-change-in-production}
-      - DATABASE_URL=postgresql+asyncpg://vulcan:change_me@postgres:5432/vulcan
-      - REDIS_URL=redis://redis:6379/0
-      - CHROMA_HOST=chroma
+      - VULCAN_HOST=0.0.0.0
+      - VULCAN_PORT=8000
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.openai.com/v1}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o}
       - LOG_LEVEL=INFO
-      - TRACE_ENABLED=true
-    depends_on:
-      - postgres
-      - redis
-      - chroma
+    volumes:
+      - ./config:/app/config:ro
+      - ~/.hermes:/root/.hermes:ro
     restart: unless-stopped
     networks:
       - vulcan-net
@@ -32,53 +32,14 @@ services:
     container_name: vulcan-webui
     ports:
       - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
     depends_on:
       - vulcan-api
     restart: unless-stopped
     networks:
       - vulcan-net
-
-  # PostgreSQL (Vulcan State + Memory)
-  postgres:
-    image: postgres:16-alpine
-    container_name: vulcan-postgres
-    environment:
-      - POSTGRES_DB=vulcan
-      - POSTGRES_USER=vulcan
-      - POSTGRES_PASSWORD=change_me_in_production
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - vulcan-net
-
-  # Redis (Session + Cache)
-  redis:
-    image: redis:7-alpine
-    container_name: vulcan-redis
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - vulcan-net
-
-  # ChromaDB (Vector Memory)
-  chroma:
-    image: ghcr.io/chroma-core/chroma:0.4.22
-    container_name: vulcan-chroma
-    ports:
-      - "8001:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
-    restart: unless-stopped
-    networks:
-      - vulcan-net
-
-volumes:
-  postgres_data:
-  redis_data:
-  chroma_data:
 
 networks:
   vulcan-net:

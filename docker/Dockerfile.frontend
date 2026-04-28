@@ -1,19 +1,24 @@
-# Frontend (Node 20)
+# === Vulcan Frontend Docker Image ===
+
 FROM node:20-alpine AS vulcan-frontend
 
 WORKDIR /app
 
+# Install deps
 COPY vulcan-webui/package*.json ./
 RUN npm ci
 
+# Copy source
 COPY vulcan-webui/ .
 
+# Build
 RUN npm run build
 
-# Nginx serve
-FROM nginx:alpine AS vulcan-webui
+# Production stage
+FROM nginx:alpine
+
 COPY --from=vulcan-frontend /app/dist /usr/share/nginx/html
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx.frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 

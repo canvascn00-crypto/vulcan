@@ -15,6 +15,8 @@ from vulcan.agent.task_queue import TaskQueue
 from vulcan.agent.observability.logger import VulcanLogger, LogLevel
 from vulcan.skills import skills_router
 from vulcan.a2a.routes import router as a2a_router
+from vulcan.auth.routes import router as auth_router
+from vulcan.auth.rbac import create_api_key, Role
 
 # Gateway integration (lazy import to avoid circular dependency)
 gateway_integration: Optional["GatewayIntegration"] = None
@@ -71,6 +73,28 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warn(f"A2A init failed (non-fatal): {e}")
 
+    # Create default admin API key (shown once, store it!)
+    try:
+        from vulcan.auth.rbac import list_api_keys
+        existing = list_api_keys()
+        if not existing:
+            record, raw_key = create_api_key(
+                name="default-admin",
+                role=Role.ADMIN,
+                rate_limit=99999,
+                rate_window=60,
+            )
+            logger.info(
+                f"🔑 Default admin API key created (save it now!):\n"
+                f"   X-Vulcan-Key: {raw_key}\n"
+                f"   Prefix: {record.key_prefix}***\n"
+                f"   Role: admin"
+            )
+        else:
+            logger.info(f"API keys loaded: {len(existing)} key(s)")
+    except Exception as e:
+        logger.warn(f"Auth init failed (non-fatal): {e}")
+
     yield
 
     # Shutdown
@@ -94,6 +118,9 @@ app.include_router(skills_router)
 
 # A2A multi-agent router
 app.include_router(a2a_router)
+
+# Auth + API keys router
+app.include_router(auth_router)
 
 # CORS
 app.add_middleware(

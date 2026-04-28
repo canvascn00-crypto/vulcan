@@ -44,6 +44,8 @@ logger = logging.getLogger("Vulcan.SkillForge")
 VULCAN_HOME = Path(os.environ.get("VULCAN_HOME", "/root/.vulcan"))
 VULCAN_SKILLS_DIR = VULCAN_HOME / "skills"
 HERMES_SKILLS_DIR = Path("/root/.hermes/skills")
+# Vulcan's built-in skill bundles (shipped with the package)
+_VULCAN_BUNDLES = Path(__file__).parent / "bundles"
 HUB_DIR = VULCAN_SKILLS_DIR / ".hub"
 LOCK_FILE = HUB_DIR / "lock.json"
 AUDIT_LOG = HUB_DIR / "audit.log"
@@ -242,7 +244,12 @@ class SkillForge:
         """Full reload: scan Vulcan registry + Hermes legacy registry."""
         self._skills.clear()
 
-        # Scan Vulcan skills
+        # Scan Vulcan built-in bundles first (highest priority)
+        if _VULCAN_BUNDLES.exists():
+            for meta in scan_skill_dir(_VULCAN_BUNDLES):
+                self._skills[meta.name] = meta
+
+        # Scan Vulcan user skills (override built-ins)
         for meta in scan_skill_dir(VULCAN_SKILLS_DIR):
             self._skills[meta.name] = meta
 

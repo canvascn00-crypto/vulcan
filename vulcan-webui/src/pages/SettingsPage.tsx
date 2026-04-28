@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Typography, Card, Tabs, Form, Input, Switch, Select, Button, Space, message, Tag, Divider, List, Modal, notification } from 'antd'
-import { CheckCircleOutlined, GlobalOutlined, RobotOutlined, SafetyOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { Typography, Card, Tabs, Form, Input, Switch, Select, Button, Space, message, Tag, Divider, List, Modal, notification, Table, Popconfirm, Alert } from 'antd'
+import { CheckCircleOutlined, GlobalOutlined, RobotOutlined, SafetyOutlined, ThunderboltOutlined, KeyOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { api } from '@/services/api'
 
 const { Title, Text } = Typography
@@ -155,6 +155,13 @@ export default function SettingsPage() {
       ),
     },
     {
+      key: 'apikeys',
+      label: '🔑 API Keys',
+      children: (
+        <APIKeysTab />
+      ),
+    },
+    {
       key: 'about',
       label: 'ℹ️ 关于',
       children: (
@@ -194,6 +201,145 @@ export default function SettingsPage() {
       <Card>
         <Tabs items={tabItems} />
       </Card>
+    </div>
+  )
+}
+
+// ─── API Keys Tab ─────────────────────────────────────────────────────────────
+
+function APIKeysTab() {
+  const [keys, setKeys] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [newKey, setNewKey] = useState<any>(null)
+  const [createForm] = Form.useForm()
+
+  const loadKeys = async () => {
+    setLoading(true)
+    try {
+      const res = await (api as any).get('/api/api-keys')
+      setKeys(res)
+    } catch { message.error('加载 API Keys 失败') }
+    finally { setLoading(false) }
+  }
+
+  const handleCreate = async (values: any) => {
+    try {
+      const res = await (api as any).post('/api/api-keys', null, {
+        name: values.name,
+        role: values.role,
+        rate_limit: values.rate_limit || 60,
+        rate_window: values.rate_window || 60,
+      })
+      setNewKey(res)
+      setCreateOpen(false)
+      loadKeys()
+    } catch (e: any) {
+      message.error(e?.data?.detail || '创建失败')
+    }
+  }
+
+  const handleRevoke = async (prefix: string) => {
+    try {
+      await (api as any).delete(`/api/api-keys/${prefix}`)
+      message.success('已吊销')
+      loadKeys()
+    } catch (e: any) {
+      message.error(e?.data?.detail || '吊销失败')
+    }
+  }
+
+  const columns = [
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '前缀', dataIndex: 'key_prefix', key: 'key_prefix', render: (k: string) => <Tag>{k}***</Tag> },
+    { title: '角色', dataIndex: 'role', key: 'role', render: (r: string) => <Tag color={r === 'admin' ? 'red' : r === 'operator' ? 'blue' : 'default'}>{r}</Tag> },
+    { title: '速率限制', dataIndex: 'rate_limit', key: 'rate_limit', render: (n: number, _: any) => `${n}/min` },
+    { title: '状态', dataIndex: 'active', key: 'active', render: (a: boolean) => a ? <Tag color="green">活跃</Tag> : <Tag color="red">已吊销</Tag> },
+    { title: '最后使用', dataIndex: 'last_used', key: 'last_used', render: (t: number) => new Date(t * 1000).toLocaleString('zh-CN') },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: any) => (
+        record.active ? (
+          <Popconfirm title="确认吊销此 Key？" onConfirm={() => handleRevoke(record.key_prefix)}>
+            <Button size="small" danger icon={<DeleteOutlined />}>吊销</Button>
+          </Popconfirm>
+        ) : null
+      ),
+    },
+  ]
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <Space direction="vertical" size={0}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            API Key 用于外部程序调用 Vulcan API。Key 只显示一次，请妥善保存。
+          </Text>
+        </Space>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setNewKey(null); setCreateOpen(true) }}>
+          创建 Key
+        </Button>
+      </div>
+
+      {newKey && (
+        <Alert
+          type="warning"
+          showIcon
+          message="✅ 新 API Key 已创建（只显示一次，请立即复制保存）"
+          description={
+            <div style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+              <strong>X-Vulcan-Key:</strong> {newKey.api_key}
+              <br />
+              <strong>Prefix:</strong> {newKey.key_prefix}*** &nbsp;
+              <strong>Role:</strong> {newKey.role}
+            </div>
+          }
+          style={{ marginBottom: 12 }}
+        />
+      )}
+
+      <Table
+        dataSource={keys}
+        columns={columns}
+        rowKey="key_prefix"
+        loading={loading}
+        size="small"
+        pagination={false}
+      />
+
+      <Modal
+        title="创建 API Key"
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        footer={null}
+      >
+        <Form form={createForm} layout="vertical" onFinish={handleCreate} style={{ marginTop: 16 }}>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
+            <Input placeholder="my-app-key" />
+          </Form.Item>
+          <Form.Item name="role" label="角色" initialValue="external" rules={[{ required: true }]}>
+            <Select options={[
+              { label: 'Admin（完全访问）', value: 'admin' },
+              { label: 'Operator（读写操作）', value: 'operator' },
+              { label: 'Readonly（只读）', value: 'readonly' },
+              { label: 'External（外部调用）', value: 'external' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="rate_limit" label="速率限制（请求/分钟）" initialValue={60}>
+            <Input type="number" min={1} />
+          </Form.Item>
+          <Form.Item name="rate_window" label="速率窗口（秒）" initialValue={60}>
+            <Input type="number" min={10} />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setCreateOpen(false)}>取消</Button>
+              <Button type="primary" htmlType="submit">创建</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

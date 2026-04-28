@@ -1,0 +1,14 @@
+{
+  "id": "vulcan-architect",
+  "name": "Vulcan-Architect",
+  "description": "Vulcan 官方架构师 — 系统设计、架构评审、技术选型",
+  "version": "1.0.0",
+  "source": "vulcan-builtin",
+  "category": "architecture",
+  "trust": "builtin",
+  "tags": ["架构", "系统设计", "技术选型"],
+  "enabled": true,
+  "builtin": true,
+  "icon": "🏗️",
+  "author": "Vulcan Team"
+}

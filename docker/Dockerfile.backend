@@ -1,6 +1,5 @@
-# === Vulcan Docker Images ===
+# === Vulcan Backend Docker Image ===
 
-# Backend (Python 3.11)
 FROM python:3.11-slim AS vulcan-backend
 
 WORKDIR /app
@@ -13,14 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps
-COPY vulcan-core/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source
+# Copy source (context is vulcan-core/ parent dir, so we copy vulcan-core/*)
 COPY vulcan-core/ .
-
-# Expose port
-EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
