@@ -50,9 +50,8 @@ class VulcanAgent:
 
         # Logger
         self.logger = VulcanLogger(
-            name="VulcanAgent",
-            trace_id=self.trace_id,
-            level=LogLevel.INFO if self.config.enable_observability else LogLevel.WARNING,
+            session_id="VulcanAgent",
+            log_level="INFO" if self.config.enable_observability else "WARNING",
         )
 
         # Core components

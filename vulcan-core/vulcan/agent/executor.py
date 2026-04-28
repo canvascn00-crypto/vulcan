@@ -54,7 +54,7 @@ class Executor:
     ):
         self.tools = tools
         self.timeout = timeout
-        self.logger = logger or VulcanLogger(name="Executor")
+        self.logger = logger or VulcanLogger(session_id="Executor")
 
     async def execute(self, action: str) -> Any:
         """

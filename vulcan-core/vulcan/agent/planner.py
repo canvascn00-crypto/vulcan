@@ -44,7 +44,7 @@ class Planner:
         self.api_key = api_key
         self.base_url = base_url
         self.temperature = temperature
-        self.logger = logger or VulcanLogger(name="Planner")
+        self.logger = logger or VulcanLogger(session_id="Planner")
 
     async def plan(self, goal: str, context: dict, step_number: int = 0) -> Plan:
         """

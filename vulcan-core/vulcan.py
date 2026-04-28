@@ -35,7 +35,7 @@ async def start_gateway():
     from vulcan.gateway_integration import gateway_integration
     from vulcan.agent.observability.logger import VulcanLogger, LogLevel
 
-    logger = VulcanLogger(name="Vulcan", level=LogLevel.INFO)
+    logger = VulcanLogger(session_id="Vulcan", log_level="INFO")
     config = AgentConfig(enable_observability=True, enable_memory=True)
     agent = VulcanAgent(config)
     logger.info("VulcanAgent initialized")

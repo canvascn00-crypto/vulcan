@@ -11,7 +11,7 @@ async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || `HTTP ${res.status}`)
+    throw Object.assign(new Error(err.detail || `HTTP ${res.status}`), { response: res, data: err })
   }
   return res.json()
 }
@@ -91,6 +91,12 @@ export interface DashboardStats {
 // ─── API Methods ─────────────────────────────────────────────────────────────
 
 export const api = {
+  // Direct HTTP helpers (generic)
+  get: <T>(path: string) => request<T>(path),
+  post: <T>(path: string, body?: Record<string, unknown>) =>
+    request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+
+  // Health
   health: () => request<HealthResponse>('/health'),
 
   // Chat (REST polling)
@@ -114,7 +120,7 @@ export const api = {
     }),
   listHomeChannels: () => request<HomeChannel[]>('/gateway/home-channels'),
 
-  // Dashboard stats (aggregated from multiple endpoints)
+  // Dashboard stats
   async dashboardStats(): Promise<DashboardStats> {
     const [tasks, tools] = await Promise.all([this.listTasks(), this.listTools()])
     const running = tasks.filter((t) => t.status === 'running').length
@@ -123,7 +129,7 @@ export const api = {
       active_agents: running + 1,
       conversations_today: completed + running,
       tool_calls: tools.tools.length,
-      avg_latency_ms: 0, // populated by WebSocket latency tracking
+      avg_latency_ms: 0,
       uptime_seconds: 0,
     }
   },

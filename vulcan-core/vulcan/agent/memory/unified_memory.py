@@ -208,7 +208,7 @@ class UnifiedMemory:
         entry_id = await self.ephemeral.add(role, content, metadata)
 
         # Also add to short-term (vector)
-        await self.short_term.add(content, metadata={"role": role, **metadata or {}})
+        await self.short_term.add(content, metadata={"role": role, **(metadata or {})})
 
         # Optional: promote to long-term
         if promote_to_long_term and role == "system":

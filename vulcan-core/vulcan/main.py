@@ -13,6 +13,7 @@ import uuid
 from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
 from vulcan.agent.task_queue import TaskQueue
 from vulcan.agent.observability.logger import VulcanLogger, LogLevel
+from vulcan.skills import skills_router
 
 # Gateway integration (lazy import to avoid circular dependency)
 gateway_integration: Optional["GatewayIntegration"] = None
@@ -27,17 +28,28 @@ async def lifespan(app: FastAPI):
     global agent, gateway_integration
     from vulcan.gateway_integration import gateway_integration as _gi
     from vulcan.agent.vulcan_agent import VulcanAgent, AgentConfig
+    from vulcan.skills import get_forge
 
     config = AgentConfig(enable_observability=True, enable_memory=True)
     agent = VulcanAgent(config)
     logger.info("Vulcan API started")
+
+    # Load SkillForge registry
+    try:
+        forge = get_forge()
+        forge.reload()
+        stats = forge.stats()
+        by_src = ", ".join(f"{k}={v}" for k, v in stats["by_source"].items())
+        logger.info(f"SkillForge loaded: {stats['total']} skills ({by_src})")
+    except Exception as e:
+        logger.warn(f"SkillForge init failed (non-fatal): {e}")
 
     # Start the messaging gateway (all 20 platforms)
     try:
         gateway_integration = await _gi(vulcan_agent=agent)
         logger.info("Vulcan Gateway started")
     except Exception as e:
-        logger.error("Failed to start gateway: %s", e)
+        logger.error(f"Failed to start gateway: {e}")
 
     yield
 
@@ -51,6 +63,9 @@ async def lifespan(app: FastAPI):
 # App
 app = FastAPI(title="Vulcan API", version="0.1.0", lifespan=lifespan)
 
+# Skills router (SkillForge + Marketplace)
+app.include_router(skills_router)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -62,7 +77,7 @@ app.add_middleware(
 
 # Globals (set in lifespan)
 agent: Optional[VulcanAgent] = None
-logger = VulcanLogger(name="VulcanAPI", level=LogLevel.INFO)
+logger = VulcanLogger(session_id="vulcan-api", log_level="INFO")
 
 
 # --- Request/Response Models ---
