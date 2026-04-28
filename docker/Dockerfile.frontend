@@ -1,0 +1,20 @@
+# Frontend (Node 20)
+FROM node:20-alpine AS vulcan-frontend
+
+WORKDIR /app
+
+COPY vulcan-webui/package*.json ./
+RUN npm ci
+
+COPY vulcan-webui/ .
+
+RUN npm run build
+
+# Nginx serve
+FROM nginx:alpine AS vulcan-webui
+COPY --from=vulcan-frontend /app/dist /usr/share/nginx/html
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+
+CMD ["nginx", "-g", "daemon off;"]

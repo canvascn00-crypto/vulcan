@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vulcan-color: #5a6ef5;
+  --vulcan-bg: #0a0a1a;
+  --vulcan-surface: #111827;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--vulcan-bg);
+  color: #e5e7eb;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* 暗色主题覆盖 */
+.dark {
+  color-scheme: dark;
+}
+
+/* 代码块 */
+pre, code {
+  font-family: 'JetBrains Mono', Menlo, monospace;
+}
