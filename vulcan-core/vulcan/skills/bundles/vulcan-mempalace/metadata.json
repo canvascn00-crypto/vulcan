@@ -1,0 +1,16 @@
+{
+  "id": "vulcan-mempalace",
+  "name": "Vulcan-MemPalace",
+  "description": "MemPalace 4层记忆系统 — 50k⭐顶级AI记忆。L0身份/L1故事/L2按需/L3深度搜索，ChromaDB向量存储，支持MCP协议。Vulcan集成版。",
+  "version": "3.3.3",
+  "source": "mempalace-github",
+  "category": "memory",
+  "trust": "verified",
+  "tags": ["记忆", "AI", "向量搜索", "ChromaDB", "MCP", "知识图谱"],
+  "enabled": true,
+  "builtin": false,
+  "icon": "🏛️",
+  "author": "MemPalace Team + Vulcan Integration",
+  "homepage": "https://github.com/MemPalace/mempalace",
+  "stars": 50000
+}

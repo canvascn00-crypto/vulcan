@@ -16,6 +16,7 @@ from vulcan.agent.observability.logger import VulcanLogger, LogLevel
 from vulcan.skills import skills_router
 from vulcan.a2a.routes import router as a2a_router
 from vulcan.auth.routes import router as auth_router
+from vulcan.memory.mempalace_routes import router as mempalace_router
 from vulcan.auth.rbac import create_api_key, Role
 
 # Gateway integration (lazy import to avoid circular dependency)
@@ -121,6 +122,9 @@ app.include_router(a2a_router)
 
 # Auth + API keys router
 app.include_router(auth_router)
+
+# MemPalace 4-layer memory router
+app.include_router(mempalace_router)
 
 # CORS
 app.add_middleware(
