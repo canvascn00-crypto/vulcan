@@ -125,8 +125,9 @@ export default function ModelsPage() {
       } else {
         message.error({ content: `✗ ${result.error}`, duration: 3 })
       }
-    } catch (e: any) {
-      setTestResult(prev => ({ ...prev, [modelId]: { success: false, error: e.message } }))
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : String(e)
+      setTestResult(prev => ({ ...prev, [modelId]: { success: false, error: errMsg } }))
       message.error('测试请求失败')
     } finally {
       setTestingId(null)
@@ -163,8 +164,8 @@ export default function ModelsPage() {
       } else {
         message.error({ content: `✗ ${result.error}`, duration: 3 })
       }
-    } catch (e: any) {
-      setTestNewResult({ success: false, error: e.message })
+    } catch (e: unknown) {
+      setTestNewResult({ success: false, error: e instanceof Error ? e.message : String(e) })
       message.error('测试失败')
     } finally {
       setTestingNew(false)
@@ -240,7 +241,7 @@ export default function ModelsPage() {
         message.success('已添加')
       }
       setModalOpen(false)
-    } catch (e: any) {
+    } catch (e: unknown) {
       // fallback to local
       if (editing) {
         setModels(prev => prev.map(m => m.id === editing.id ? { ...m, ...payload } : m))

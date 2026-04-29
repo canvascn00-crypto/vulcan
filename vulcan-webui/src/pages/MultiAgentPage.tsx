@@ -201,7 +201,7 @@ export default function MultiAgentPage() {
     },
     {
       title: '操作', key: 'action', width: 80,
-      render: (_: any, record: DelegatedTask) => (
+      render: (_: unknown, record: DelegatedTask) => (
         <Button size="small" danger onClick={() => handleCancelTask(record.task_id)} style={{ fontSize: 11 }}>
           取消
         </Button>
