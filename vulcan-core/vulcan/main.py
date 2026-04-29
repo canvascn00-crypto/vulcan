@@ -350,3 +350,24 @@ async def websocket_endpoint(ws: WebSocket, client_id: str):
             })
     except WebSocketDisconnect:
         _ws_manager.disconnect(client_id)
+
+
+# --- Serve Frontend SPA (built-in, no separate server needed) ---
+import os as _os
+from fastapi.staticfiles import StaticFiles as _StaticFiles
+from fastapi.responses import FileResponse as _FileResponse
+
+_WEBUI_DIST = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "vulcan-webui", "dist")
+
+if _os.path.isdir(_WEBUI_DIST) and _os.path.isfile(_os.path.join(_WEBUI_DIST, "index.html")):
+    _assets_dir = _os.path.join(_WEBUI_DIST, "assets")
+    if _os.path.isdir(_assets_dir):
+        app.mount("/assets", _StaticFiles(directory=_assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def _serve_spa(full_path: str):
+        """Serve the SPA — fallback to index.html for client-side routing."""
+        candidate = _os.path.join(_WEBUI_DIST, full_path)
+        if full_path and _os.path.isfile(candidate):
+            return _FileResponse(candidate)
+        return _FileResponse(_os.path.join(_WEBUI_DIST, "index.html"))
