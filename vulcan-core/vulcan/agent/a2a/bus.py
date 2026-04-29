@@ -42,8 +42,8 @@ class A2ABus:
     """
     A2A 消息总线 — Vulcan 多 Agent 协作的核心
 
-    对比 Hermes：
-    - Hermes: 无多 Agent 协作，靠 tmux 手动脚本
+    Comparison:
+    - Without Vulcan: no multi-agent coordination
     - Vulcan: 完整 A2A 协议，消息总线，协作调度
 
     支持：

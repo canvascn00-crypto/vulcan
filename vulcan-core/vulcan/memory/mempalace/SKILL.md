@@ -5,7 +5,7 @@ version: 3.3.0
 homepage: https://github.com/MemPalace/mempalace
 user-invocable: true
 metadata:
-  openclaw:
+  vulcan:
     emoji: "\U0001F3DB"
     os:
       - darwin
@@ -110,9 +110,9 @@ mempalace init ~/my-convos
 mempalace mine ~/my-convos
 ```
 
-### OpenClaw MCP config
+### Vulcan MCP config
 
-Add to your OpenClaw MCP configuration:
+Add to your Vulcan MCP configuration:
 
 ```json
 {
@@ -128,7 +128,7 @@ Add to your OpenClaw MCP configuration:
 Or via CLI:
 
 ```bash
-openclaw mcp set mempalace '{"command":"python3","args":["-m","mempalace.mcp_server"]}'
+vulcan mcp set mempalace '{"command":"python3","args":["-m","mempalace.mcp_server"]}'
 ```
 
 ### Other MCP hosts

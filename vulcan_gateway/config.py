@@ -1,7 +1,7 @@
 """
 Vulcan Gateway — platform configuration.
 
-Supports 20 platforms inherited from Hermes Agent.
+Supports 20 platforms inherited from Vulcan Agent.
 """
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ class PlatformConfig:
 class VulcanGatewayConfig:
     """Root config for Vulcan Gateway."""
     vulcan_home: Path = Path.home() / ".vulcan"
-    hermes_home: Path = Path.home() / ".hermes"
+    agent_home: Path = Path.home() / ".hermes"
     platforms: Dict[str, PlatformConfig] = field(default_factory=dict)
     session_policy: SessionResetPolicy = field(default_factory=SessionResetPolicy)
     streaming_enabled: bool = True
@@ -125,7 +125,7 @@ class VulcanGatewayConfig:
         session_policy = SessionResetPolicy.from_dict(data.get("session_policy", {}))
         return cls(
             vulcan_home=Path(data.get("vulcan_home", str(Path.home() / ".vulcan"))),
-            hermes_home=Path(data.get("hermes_home", str(Path.home() / ".hermes"))),
+            agent_home=Path(data.get("agent_home", str(Path.home() / ".hermes"))),
             platforms=platforms,
             session_policy=session_policy,
             streaming_enabled=data.get("streaming_enabled", True),
@@ -135,7 +135,7 @@ class VulcanGatewayConfig:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "vulcan_home": str(self.vulcan_home),
-            "hermes_home": str(self.hermes_home),
+            "agent_home": str(self.agent_home),
             "platforms": {k: v.to_dict() for k, v in self.platforms.items()},
             "session_policy": self.session_policy.to_dict(),
             "streaming_enabled": self.streaming_enabled,

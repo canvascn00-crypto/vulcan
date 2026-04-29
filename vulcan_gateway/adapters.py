@@ -1,10 +1,10 @@
 """
-Vulcan Platform Adapters — inherit Hermes adapters, drive with VulcanAgent.
+Vulcan Platform Adapters — inherit platform adapters, drive with VulcanAgent.
 
-Each adapter wraps a Hermes platform adapter and overrides only the
-message-handling layer to route events to VulcanAgent instead of Hermes AIAgent.
+Each adapter wraps the platform adapter and overrides only the
+message-handling layer to route events to VulcanAgent instead of VulcanAgent.
 
-Supported platforms (inherited from Hermes):
+Supported platforms (supported by Vulcan):
   WeChat, Telegram, Discord, WhatsApp, Slack, Signal, Mattermost,
   Matrix, DingTalk, FeiShu, WeCom, QQBot, SMS, Email, HomeAssistant,
   BlueBubbles, Webhook
@@ -20,8 +20,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-# Re-export the Hermes base classes so Vulcan adapters can inherit them.
-# These are set up by _ensure_hermes_path() below.
+# Re-export the platform base classes so Vulcan adapters can inherit them.
+# These are set up by _ensure_agent_path() below.
 BasePlatformAdapter = None
 MessageEvent = None
 SendResult = None
@@ -29,25 +29,25 @@ MessageType = None
 SessionSource = None
 
 
-def _ensure_hermes_path() -> bool:
-    """Add Hermes Agent to sys.path if not already present."""
+def _ensure_agent_path() -> bool:
+    """Add Vulcan Agent to sys.path if not already present."""
     import sys
     from pathlib import Path
 
-    hermes_home = Path.home() / ".hermes" / "hermes-agent"
-    if not hermes_home.exists():
-        logger.warning("Hermes Agent not found at %s — Vulcan adapters will use stubs", hermes_home)
+    agent_home = Path.home() / ".hermes" / "hermes-agent"
+    if not agent_home.exists():
+        logger.warning("Vulcan Agent not found at %s — Vulcan adapters will use stubs", agent_home)
         return False
 
-    str_path = str(hermes_home)
+    str_path = str(agent_home)
     if str_path not in sys.path:
         sys.path.insert(0, str_path)
 
     return True
 
 
-def _import_hermes_base() -> bool:
-    """Import Hermes base classes. Returns True if successful."""
+def _import_agent_base() -> bool:
+    """Import platform base classes. Returns True if successful."""
     global BasePlatformAdapter, MessageEvent, SendResult, MessageType, SessionSource
     try:
         from gateway.platforms.base import (
@@ -64,11 +64,11 @@ def _import_hermes_base() -> bool:
         SessionSource = _SS
         return True
     except ImportError as e:
-        logger.warning("Could not import Hermes base classes: %s", e)
+        logger.warning("Could not import platform base classes: %s", e)
         return False
 
 
-_HERMES_LOADED = _ensure_hermes_path() and _import_hermes_base()
+_AGENT_LOADED = _ensure_agent_path() and _import_agent_base()
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +80,7 @@ VulcanMessageHandler = Callable[["VulcanAdapterMixin", MessageEvent], Any]
 class VulcanAdapterMixin:
     """
     Thin mixin that overrides the message-handling hook to route events to
-    VulcanAgent instead of Hermes AIAgent.
+    VulcanAgent instead of VulcanAgent.
 
     Usage:
         class VulcanWeixinAdapter(VulcanAdapterMixin, WeixinAdapter):
@@ -89,7 +89,7 @@ class VulcanAdapterMixin:
     The mixin overrides `_process_message_background` (the internal background
     task that calls the AI).  All platform-specific logic (login, long-poll,
     media download, send, typing indicators) is inherited unchanged from the
-    Hermes adapter.
+    platform adapter.
     """
 
     # Set by PlatformManager when the adapter is registered
@@ -108,10 +108,10 @@ class VulcanAdapterMixin:
             return "VulcanAgent is not configured. Please restart the gateway."
 
         try:
-            # Build session_key (same formula as Hermes)
+            # Build session_key (same formula)
             session_key = self._build_session_key(event)
 
-            # Wrap Hermes MessageEvent → Vulcan chat message format
+            # Wrap platform MessageEvent → Vulcan chat message format
             vulcan_event = {
                 "text": event.text or "",
                 "message_id": event.message_id or str(uuid.uuid4()),
@@ -147,7 +147,7 @@ class VulcanAdapterMixin:
             return f"Sorry, I encountered an error: {type(e).__name__}: {e}"
 
     def _build_session_key(self, event: MessageEvent) -> str:
-        """Build session key for this platform (mirrors Hermes logic)."""
+        """Build session key for this platform (mirrors platform logic)."""
         parts = [self.name]
         if event.source:
             if event.source.user_id:
@@ -160,10 +160,10 @@ class VulcanAdapterMixin:
 
 
 # ---------------------------------------------------------------------------
-# Stub base classes when Hermes is not available
+# Stub base classes when agent runtime is not available
 # ---------------------------------------------------------------------------
-if not _HERMES_LOADED:
-    logger.warning("Hermes Agent not found — Vulcan will run without platform adapters.")
+if not _AGENT_LOADED:
+    logger.warning("Vulcan Agent not found — Vulcan will run without platform adapters.")
 
     class MessageEvent:
         text: str = ""
@@ -240,7 +240,7 @@ if not _HERMES_LOADED:
         vulcan_session_store = None
 
         async def _vulcan_handle(self, event: MessageEvent) -> Optional[str]:
-            return "Hermes platform adapters not available."
+            return "Platform adapters not available."
 
         def _build_session_key(self, event: MessageEvent) -> str:
             return f"stub:{getattr(event, 'source', None)}"
@@ -268,14 +268,14 @@ async def create_vulcan_adapter(
       1. WeChat — VulcanWeixinAdapter (full override)
       2. Telegram — VulcanTelegramAdapter
       3. Discord — VulcanDiscordAdapter
-      4. Generic — VulcanAdapterMixin + Hermes adapter (if Hermes loaded)
-      5. Stub — BasePlatformAdapter (if Hermes not loaded)
+      4. Generic — VulcanAdapterMixin + platform adapter (if agent loaded)
+      5. Stub — BasePlatformAdapter (if agent not loaded)
     """
     platform = platform.lower()
 
-    # Try Hermes adapter first
-    if _HERMES_LOADED:
-        adapter_cls = _get_hermes_adapter_cls(platform)
+    # Try platform adapter first
+    if _AGENT_LOADED:
+        adapter_cls = _get_adapter_cls(platform)
         if adapter_cls is not None:
             # Wrap with Vulcan mixin
             VulcanCls = _make_vulcan_adapter(platform, adapter_cls)
@@ -299,8 +299,8 @@ async def create_vulcan_adapter(
     return stub
 
 
-def _get_hermes_adapter_cls(platform: str) -> Optional[type]:
-    """Import and return the Hermes adapter class for the given platform."""
+def _get_adapter_cls(platform: str) -> Optional[type]:
+    """Import and return the platform adapter class for the given platform."""
     mapping = {
         "weixin": ("gateway.platforms.weixin", "WeixinAdapter"),
         "telegram": ("gateway.platforms.telegram", "TelegramAdapter"),
@@ -333,22 +333,22 @@ def _get_hermes_adapter_cls(platform: str) -> Optional[type]:
         return None
 
 
-def _make_vulcan_adapter(platform: str, HermesAdapterCls: type) -> type:
-    """Create a Vulcan-aware subclass of a Hermes adapter."""
+def _make_vulcan_adapter(platform: str, AdapterCls: type) -> type:
+    """Create a Vulcan-aware subclass of a platform adapter."""
 
     # Check registry first
     if platform in _ADAPTER_REGISTRY:
         return _ADAPTER_REGISTRY[platform]
 
     # Capture the parent's _process_message_background before we override it
-    _parent_process = getattr(HermesAdapterCls, "_process_message_background", None)
+    _parent_process = getattr(AdapterCls, "_process_message_background", None)
 
-    class VulcanAdapter(VulcanAdapterMixin, HermesAdapterCls):  # type: ignore[misc]
-        """Hermes adapter + VulcanAgent message routing."""
+    class VulcanAdapter(VulcanAdapterMixin, AdapterCls):  # type: ignore[misc]
+        """platform adapter + VulcanAgent message routing."""
 
         def __init__(self, config: Any = None):
-            # Skip HermesAdapterCls.__init__ and init the base ourselves
-            # to avoid calling into Hermes's full init which needs Hermes globals
+            # Skip AdapterCls.__init__ and init the base ourselves
+            # to avoid calling into agent full init
             from dataclasses import fields
             # Initialize base fields to defaults
             self.config = config
@@ -356,7 +356,7 @@ def _make_vulcan_adapter(platform: str, HermesAdapterCls: type) -> type:
 
         async def _process_message_background(self, event: MessageEvent, session_key: str) -> None:
             """
-            Override: route message to VulcanAgent instead of Hermes AIAgent.
+            Override: route message to VulcanAgent instead of VulcanAgent.
 
             Keeps ALL inherited behavior:
             - Typing indicators
@@ -437,8 +437,8 @@ def _make_vulcan_adapter(platform: str, HermesAdapterCls: type) -> type:
     return VulcanCls
 
 
-class StubAdapter(BasePlatformAdapter if _HERMES_LOADED else object):
-    """Fallback adapter when Hermes is not available."""
+class StubAdapter(BasePlatformAdapter if _AGENT_LOADED else object):
+    """Fallback adapter when agent runtime is not available."""
 
     def __init__(self, platform: str, config: Any = None):
         self.name = platform

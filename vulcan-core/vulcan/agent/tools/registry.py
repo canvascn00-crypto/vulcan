@@ -1,7 +1,7 @@
 """
 VulcanToolRegistry — 动态工具注册表
-继承 Hermes 全部 60+ 工具，新增工具链编排、速率限制
-支持从 Hermes tools/ 目录自动发现并接入
+继承 Vulcan 60+ built-in tools，新增工具链编排、速率限制
+Self-discovery from/ 目录自动发现并接入
 """
 
 import asyncio
@@ -25,7 +25,7 @@ class ToolInfo:
     handler: Callable
     emoji: str = "🔧"
     check_fn: Optional[Callable] = None
-    hermes_path: Optional[str] = None
+    legacy_path: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -57,14 +57,14 @@ class VulcanToolRegistry:
     """
     Vulcan 工具注册表。
 
-    自动从 Hermes tools/ 目录发现工具并接入。
+    Self-discovery from legacy tools directory。
     同时支持直接注册 Python 函数作为工具。
     """
 
-    def __init__(self, hermes_tools_path: str = None):
+    def __init__(self, legacy_tools_path: str = None):
         self._tools: dict[str, ToolInfo] = {}
         self._handlers: dict[str, Callable] = {}
-        self._hermes_path = hermes_tools_path
+        self._legacy_path = legacy_tools_path
         self._initialized = False
         self._lock = asyncio.Lock()
 
@@ -72,37 +72,37 @@ class VulcanToolRegistry:
         self._rate_limits: dict[str, list[float]] = {}
 
     async def initialize(self):
-        """初始化：加载 Hermes 工具。"""
+        """初始化：Load legacy 工具。"""
         if self._initialized:
             return
         async with self._lock:
             if self._initialized:
                 return
-            await self._discover_hermes_tools()
+            await self._discover_legacy_tools()
             self._initialized = True
             logger.info(f"VulcanToolRegistry initialized with {len(self._tools)} tools")
 
-    async def _discover_hermes_tools(self):
-        """从 Hermes tools/ 目录自动发现工具。"""
-        if not self._hermes_path or not Path(self._hermes_path).exists():
-            logger.warning(f"Hermes tools path not found: {self._hermes_path}")
+    async def _discover_legacy_tools(self):
+        """Self-discovery from legacy tools directory。"""
+        if not self._legacy_path or not Path(self._legacy_path).exists():
+            logger.warning(f"Legacy tools path not found: {self._legacy_path}")
             return
 
-        tools_dir = Path(self._hermes_path)
+        tools_dir = Path(self._legacy_path)
         sys.path.insert(0, str(tools_dir.parent))
 
         for tool_file in sorted(tools_dir.glob("*_tool.py")):
             if tool_file.name in ("__init__.py", "registry.py"):
                 continue
             try:
-                await self._load_hermes_tool(tool_file)
+                await self._load_legacy_tool(tool_file)
             except Exception as e:
                 logger.debug(f"Could not load {tool_file.name}: {e}")
 
         sys.path.pop(0)
 
-    async def _load_hermes_tool(self, tool_file: Path):
-        """加载单个 Hermes 工具文件。"""
+    async def _load_legacy_tool(self, tool_file: Path):
+        """加载单个 legacy tool file。"""
         module_name = tool_file.stem
 
         # Import module
@@ -112,9 +112,9 @@ class VulcanToolRegistry:
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
 
-        # Make hermes registry available
+        # Make legacy registry available
         from types import ModuleType
-        hermes_registry = ModuleType("registry")
+        legacy_registry = ModuleType("registry")
         registered_tools: list = []
 
         def register(name, toolset, schema, handler, check_fn=None, emoji="🔧", max_result_size_chars=None):
@@ -127,8 +127,8 @@ class VulcanToolRegistry:
                 "emoji": emoji,
             })
 
-        hermes_registry.register = register
-        sys.modules["tools.registry"] = hermes_registry
+        legacy_registry.register = register
+        sys.modules["tools.registry"] = legacy_registry
 
         try:
             spec.loader.exec_module(module)
@@ -146,7 +146,7 @@ class VulcanToolRegistry:
                 handler=t["handler"],
                 emoji=t.get("emoji", "🔧"),
                 check_fn=t.get("check_fn"),
-                hermes_path=str(tool_file),
+                legacy_path=str(tool_file),
             )
             self._tools[info.name] = info
             self._handlers[info.name] = t["handler"]

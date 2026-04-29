@@ -70,12 +70,12 @@ const ICON_BG_COLORS = ['#7065F3', '#22C55E', '#F59E0B', '#3B82F6', '#EC4899', '
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_INSTALLED_SKILLS: Skill[] = [
-  { name: 'Hermes Core', description: '核心助手技能，提供基础对话和推理能力', source: 'hermes', source_path: null, trust_level: 'builtin', version: '2.1.0', author: 'System', tags: ['core', 'assistant'], status: 'active', installed_at: '2026-01-15', last_used: '2026-04-28', use_count: 1247, rating: 5.0 },
+  { name: 'Vulcan Core', description: '核心助手技能，提供基础对话和推理能力', source: 'vulcan', source_path: null, trust_level: 'builtin', version: '2.1.0', author: 'System', tags: ['core', 'assistant'], status: 'active', installed_at: '2026-01-15', last_used: '2026-04-28', use_count: 1247, rating: 5.0 },
   { name: 'Web Search', description: '互联网搜索技能，实时获取最新信息', source: 'vulcan', source_path: '/skills/web_search', trust_level: 'trusted', version: '1.5.2', author: 'Vulcan Team', tags: ['search', 'web'], status: 'active', installed_at: '2026-02-20', last_used: '2026-04-28', use_count: 892, rating: 4.8 },
   { name: 'Code Interpreter', description: '代码执行技能，支持 Python/JS 等多语言', source: 'vulcan', source_path: '/skills/code_interpreter', trust_level: 'trusted', version: '1.3.0', author: 'Vulcan Team', tags: ['code', 'execution'], status: 'active', installed_at: '2026-03-01', last_used: '2026-04-27', use_count: 456, rating: 4.6 },
   { name: 'Image Gen', description: 'AI 图像生成技能，支持多种风格', source: 'marketplace', source_path: null, trust_level: 'community', version: '0.9.1', author: 'Community', tags: ['image', 'generation'], status: 'active', installed_at: '2026-03-15', last_used: '2026-04-25', use_count: 234, rating: 4.3 },
   { name: 'Data Analysis', description: '数据分析和可视化技能', source: 'vulcan', source_path: '/skills/data_analysis', trust_level: 'trusted', version: '1.0.5', author: 'Vulcan Team', tags: ['data', 'analytics'], status: 'active', installed_at: '2026-04-01', last_used: '2026-04-26', use_count: 178, rating: 4.7 },
-  { name: 'Memory', description: '长期记忆存储和检索技能', source: 'hermes', source_path: null, trust_level: 'builtin', version: '1.8.0', author: 'System', tags: ['memory', 'storage'], status: 'active', installed_at: '2026-01-10', last_used: '2026-04-28', use_count: 3102, rating: 4.9 },
+  { name: 'Memory', description: '长期记忆存储和检索技能', source: 'vulcan', source_path: null, trust_level: 'builtin', version: '1.8.0', author: 'System', tags: ['memory', 'storage'], status: 'active', installed_at: '2026-01-10', last_used: '2026-04-28', use_count: 3102, rating: 4.9 },
 ]
 
 const MOCK_MARKETPLACE_SKILLS: MarketplaceEntry[] = [
@@ -107,7 +107,7 @@ const TRUST_OPTIONS = [
 
 const SOURCE_OPTIONS = [
   { label: '全部来源', value: 'all' },
-  { label: 'Hermes', value: 'hermes' },
+  { label: 'Vulcan', value: 'vulcan' },
   { label: '本地', value: 'vulcan' },
   { label: 'Marketplace', value: 'marketplace' },
 ]

@@ -174,8 +174,8 @@ def uninstall_skill(name: str):
         raise HTTPException(404, f"Skill '{name}' not found")
     # Only allow uninstalling Vulcan-installed skills
     meta = forge.get(name)
-    if meta and meta.source == SkillSource.HERMES_LEGACY:
-        raise HTTPException(403, "Cannot uninstall Hermes legacy skills")
+    if meta and meta.source == SkillSource.LEGACY:
+        raise HTTPException(403, "Cannot uninstall legacy skills")
     forge.uninstall(name)
     return {"ok": True, "name": name}
 
@@ -268,21 +268,21 @@ def get_skill_content(name: str):
 @router.get("/paths/discover")
 def discover_skill_paths():
     """Return all known skill root paths."""
-    from .skill_forge import HERMES_SKILLS_DIR, VULCAN_SKILLS_DIR
+    from .skill_forge import LEGACY_SKILLS_DIR, VULCAN_SKILLS_DIR
     vulcan_skills = []
-    hermes_skills = []
+    legacy_skills = []
 
     for p in VULCAN_SKILLS_DIR.rglob("SKILL.md"):
         rel = p.parent.relative_to(VULCAN_SKILLS_DIR)
         vulcan_skills.append({"name": rel.name if rel.parts else p.parent.name, "path": str(p.parent)})
 
-    for p in HERMES_SKILLS_DIR.rglob("SKILL.md"):
-        rel = p.parent.relative_to(HERMES_SKILLS_DIR)
-        hermes_skills.append({"name": rel.name if rel.parts else p.parent.name, "path": str(p.parent)})
+    for p in LEGACY_SKILLS_DIR.rglob("SKILL.md"):
+        rel = p.parent.relative_to(LEGACY_SKILLS_DIR)
+        legacy_skills.append({"name": rel.name if rel.parts else p.parent.name, "path": str(p.parent)})
 
     return {
         "vulcan_skills_dir": str(VULCAN_SKILLS_DIR),
-        "hermes_skills_dir": str(HERMES_SKILLS_DIR),
+        "legacy_skills_dir": str(LEGACY_SKILLS_DIR),
         "vulcan_skills": vulcan_skills,
-        "hermes_skills": hermes_skills,
+        "legacy_skills": legacy_skills,
     }

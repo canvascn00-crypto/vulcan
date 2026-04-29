@@ -3,7 +3,7 @@
 # 启动后自动加载所有已启用(enabled: true)的平台
 
 vulcan_home: ~/.vulcan
-hermes_home: ~/.hermes
+agent_home: ~/.hermes
 streaming_enabled: true
 log_level: INFO
 
@@ -17,12 +17,12 @@ session_policy:
 # 平台配置
 platforms:
   # ============================================================
-  # 微信（iLink Bot API）- 已在 Hermes 配置，可直接启用
+  # 微信（iLink Bot API）- 已在 Vulcan config，可直接启用
   # ============================================================
   weixin:
     enabled: true
     extra:
-      # iLink 凭证（从 Hermes .env 继承）
+      # iLink 凭证（从 Vulcan .env 继承）
       ilink_token: "${ILINK_TOKEN}"    # 从环境变量读取
       ilink_app_id: "bot"
       # 长轮询超时（毫秒）

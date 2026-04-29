@@ -19,7 +19,7 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - ./config:/app/config:ro
-      - ~/.hermes:/root/.hermes:ro
+      - ~/.vulcan:/root/.vulcan:ro
     restart: unless-stopped
     networks:
       - vulcan-net

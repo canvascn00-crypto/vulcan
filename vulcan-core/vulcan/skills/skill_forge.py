@@ -1,9 +1,9 @@
 """
-Vulcan SkillForge — Universal skill registry with Hermes inheritance.
+Vulcan SkillForge — Universal skill registry with legacy skill inheritance.
 
 Scans and manages skills from:
   - Vulcan's own registry (~/.vulcan/skills/)
-  - Hermes legacy registry (~/.hermes/skills/) — backward compatible
+  - legacy skill registry (~/.hermes/skills/) — backward compatible
 
 Each skill is a directory containing a SKILL.md with YAML frontmatter:
   ---
@@ -46,7 +46,7 @@ _home = _os.path.expanduser("~")
 
 VULCAN_HOME = Path(os.environ.get("VULCAN_HOME", str(Path(_home) / ".vulcan")))
 VULCAN_SKILLS_DIR = VULCAN_HOME / "skills"
-HERMES_SKILLS_DIR = Path(_home) / ".hermes" / "skills"
+LEGACY_SKILLS_DIR = Path(_home) / ".hermes" / "skills"
 # Vulcan's built-in skill bundles (shipped with the package)
 _VULCAN_BUNDLES = Path(__file__).parent / "bundles"
 HUB_DIR = VULCAN_SKILLS_DIR / ".hub"
@@ -62,7 +62,7 @@ INDEX_CACHE_DIR = HUB_DIR / "index-cache"
 
 class SkillSource(str, Enum):
     VULCAN = "vulcan"           # Vulcan's own skill registry
-    HERMES_LEGACY = "hermes"    # Inherited from Hermes
+    LEGACY = "legacy"    # Inherited from legacy
     GITHUB = "github"           # From GitHub URL
     MARKETPLACE = "marketplace" # From Vulcan marketplace
 
@@ -76,7 +76,7 @@ class SkillStatus(str, Enum):
 
 class TrustLevel(str, Enum):
     BUILTIN = "builtin"    # Ships with Vulcan
-    TRUSTED = "trusted"   # From Hermes or verified source
+    TRUSTED = "trusted"   # From verified source
     COMMUNITY = "community"  # From marketplace
 
 
@@ -173,15 +173,15 @@ def scan_skill_file(skill_path: Path) -> Optional[SkillMeta]:
     skill_dir = skill_path.parent
     if str(skill_dir).startswith(str(VULCAN_SKILLS_DIR)):
         source = SkillSource.VULCAN
-    elif str(skill_dir).startswith(str(HERMES_SKILLS_DIR)):
-        source = SkillSource.HERMES_LEGACY
+    elif str(skill_dir).startswith(str(LEGACY_SKILLS_DIR)):
+        source = SkillSource.LEGACY
     else:
         source = SkillSource.VULCAN
 
     # Trust level
     if source == SkillSource.VULCAN and "optional-skills" not in str(skill_dir):
         trust = TrustLevel.BUILTIN
-    elif source == SkillSource.HERMES_LEGACY:
+    elif source == SkillSource.LEGACY:
         trust = TrustLevel.TRUSTED
     else:
         trust = TrustLevel.COMMUNITY
@@ -219,7 +219,7 @@ def scan_skill_dir(skill_dir: Path) -> list[SkillMeta]:
 
 class SkillForge:
     """
-    Central skill registry. Inherits skills from Hermes (~/.hermes/skills/)
+    Central skill registry. Inherits skills from legacy registry (~/.hermes/skills/)
     and maintains Vulcan's own registry (~/.vulcan/skills/).
 
     Usage:
@@ -244,7 +244,7 @@ class SkillForge:
     # ---- reload -------------------------------------------------------------
 
     def reload(self):
-        """Full reload: scan Vulcan registry + Hermes legacy registry."""
+        """Full reload: scan Vulcan registry + legacy skill registry."""
         self._skills.clear()
 
         # Scan Vulcan built-in bundles first (highest priority)
@@ -256,8 +256,8 @@ class SkillForge:
         for meta in scan_skill_dir(VULCAN_SKILLS_DIR):
             self._skills[meta.name] = meta
 
-        # Merge Hermes legacy skills (don't override Vulcan overrides)
-        for meta in scan_skill_dir(HERMES_SKILLS_DIR):
+        # Merge legacy skills (don't override Vulcan overrides)
+        for meta in scan_skill_dir(LEGACY_SKILLS_DIR):
             if meta.name not in self._skills:
                 self._skills[meta.name] = meta
 

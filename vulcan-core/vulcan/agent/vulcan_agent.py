@@ -57,7 +57,7 @@ class VulcanAgent:
 
         # Core components
         self.memory = UnifiedMemory() if self.config.enable_memory else None
-        self.tools = VulcanToolRegistry(hermes_tools_path=str(Path.home() / ".hermes" / "hermes-agent" / "tools"))
+        self.tools = VulcanToolRegistry(legacy_tools_path=str(Path.home() / ".hermes" / "hermes-agent" / "tools"))
         self.task_queue = TaskQueue()
 
         # Planner + Executor

@@ -1,5 +1,5 @@
 """
-Vulcan SkillForge — Universal skill registry with Hermes inheritance.
+Vulcan SkillForge — Universal skill registry with legacy skill inheritance.
 """
 
 from .marketplace import (
@@ -10,7 +10,7 @@ from .marketplace import (
 )
 from .routes import router as skills_router
 from .skill_forge import (
-    HERMES_SKILLS_DIR,
+    LEGACY_SKILLS_DIR,
     QUARANTINE_DIR,
     VULCAN_HOME,
     VULCAN_SKILLS_DIR,
@@ -42,7 +42,7 @@ __all__ = [
     # Paths
     "VULCAN_HOME",
     "VULCAN_SKILLS_DIR",
-    "HERMES_SKILLS_DIR",
+    "LEGACY_SKILLS_DIR",
     "HUB_DIR",
     "QUARANTINE_DIR",
     "LOCK_FILE",

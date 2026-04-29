@@ -1,7 +1,7 @@
 """
 Executor — 任务执行器（行动核）
 负责：调用工具、执行步骤、处理错误、返回结果
-继承 Hermes 全部 60+ 工具，新增工具链自动编排
+继承 Vulcan 60+ built-in tools，新增工具链自动编排
 """
 
 import asyncio

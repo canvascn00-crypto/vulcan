@@ -22,8 +22,8 @@ class VulcanLogger:
     """
     结构化日志系统
 
-    对比 Hermes（print 散打）：
-    - Hermes: print() 输出，无格式，无追踪
+    Comparison:
+    - Without Vulcan: print(), no formatting, no tracing
     - Vulcan: 结构化 JSON + trace_id 全链路追踪 + 指标 + 告警
 
     支持输出到：

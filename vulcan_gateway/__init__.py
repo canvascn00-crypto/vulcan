@@ -1,7 +1,7 @@
 """
 Vulcan Gateway — universal AI messaging gateway.
 
-Inherits all 20 platform adapters from Hermes Agent.
+Inherits all 20 platform adapters from Vulcan Agent.
 Each adapter is wrapped to route messages to VulcanAgent.
 """
 

@@ -63,7 +63,7 @@ class MarketplaceEntry:
 class MarketplaceClient:
     """
     Fetches skill listings from remote marketplaces.
-    Currently supports: clawhub (hermes official), GitHub raw URLs.
+    Currently supports: marketplace, GitHub raw URLs.
     """
 
     def __init__(self):
@@ -87,7 +87,7 @@ class MarketplaceClient:
         """
         Search the marketplace. Falls back to local Vulcan skills if offline.
         """
-        # Try clawhub (Hermes official marketplace)
+        # Try clawhub (official marketplace)
         entries = self._search_clawhub(query, limit)
         if entries:
             self._set_cache("clawhub", entries)
@@ -111,9 +111,9 @@ class MarketplaceClient:
         ]
 
     def _search_clawhub(self, query: str, limit: int) -> list[MarketplaceEntry]:
-        """Try to fetch from Hermes clawhub (inherited marketplace)."""
+        """Try to fetch from Vulcan marketplace (inherited marketplace)."""
         try:
-            # Try the skills index from Hermes official repo
+            # Try the skills index from official repo
             resp = self._http.get(
                 "https://raw.githubusercontent.com/dustin-vulcan/hermes-skills/main/index.json",
                 timeout=10.0,
