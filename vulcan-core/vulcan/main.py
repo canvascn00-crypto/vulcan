@@ -32,6 +32,12 @@ from vulcan.memory.mempalace_routes import router as mempalace_router
 from vulcan.models.routes import router as models_router
 from vulcan.experts.routes import router as experts_router
 from vulcan.commands.routes import router as commands_router
+from vulcan.self_evolver.routes import router as evolver_router
+from vulcan.observability.routes import router as observability_router
+from vulcan.multimodal.routes import router as multimodal_router
+from vulcan.optimizer import router as optimizer_router
+from vulcan.shield.routes import router as shield_router
+from vulcan.devtools import router as devtools_router
 from vulcan.auth.rbac import create_api_key, Role
 
 # Gateway integration (lazy import to avoid circular dependency)
@@ -154,6 +160,24 @@ app.include_router(experts_router)
 
 # Global built-in commands router (31 universal commands)
 app.include_router(commands_router)
+
+# Self-evolver router (prompt optimization, skill scoring, auto-evolution)
+app.include_router(evolver_router)
+
+# Observability router (metrics, traces, health, alerts, dashboard)
+app.include_router(observability_router)
+
+# Multimodal router (capability registry, processing pipeline, job queue)
+app.include_router(multimodal_router)
+
+# Optimizer router (parameter tuning, cache strategy, cost optimization)
+app.include_router(optimizer_router)
+
+# Shield router (security: input filtering, injection detection, rate limiting)
+app.include_router(shield_router)
+
+# DevTools router (API testing, debug logging, profiling, inspection)
+app.include_router(devtools_router)
 
 # CORS
 app.add_middleware(
