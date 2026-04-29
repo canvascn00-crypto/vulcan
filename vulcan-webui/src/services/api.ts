@@ -2,7 +2,7 @@
  * Vulcan API Client — typed service layer for all backend endpoints
  */
 
-const BASE = '/api'
+const BASE = ''
 
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
