@@ -101,6 +101,13 @@ install_backend_deps() {
     # 尝试安装可选依赖（装不上不影响运行）
     $PIP install --quiet structlog a2wsgi 2>/dev/null || true
 
+    # 验证 uvicorn 可用
+    if ! $PYTHON -c "import uvicorn" 2>/dev/null; then
+        warn "uvicorn 未正确安装，尝试用户级安装..."
+        $PYTHON -m pip install --user uvicorn fastapi httpx pydantic 2>/dev/null || true
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+
     info "后端依赖安装完成"
 }
 
@@ -184,6 +191,11 @@ start_server() {
 
     # 添加 vulcan-core 到 PYTHONPATH
     export PYTHONPATH="$SCRIPT_DIR/vulcan-core:${PYTHONPATH:-}"
+
+    # 最终检查 uvicorn
+    if ! $PYTHON -c "import uvicorn" 2>/dev/null; then
+        fail "uvicorn 仍未找到，请手动运行: pip install uvicorn"
+    fi
 
     HOST="${VULCAN_HOST:-0.0.0.0}"
     PORT="${VULCAN_PORT:-8000}"
