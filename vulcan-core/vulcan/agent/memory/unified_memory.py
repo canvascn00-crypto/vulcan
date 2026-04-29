@@ -141,7 +141,10 @@ class ShortTermMemory:
 class LongTermMemory:
     """Layer 3: 长期记忆 — SOUL.md 人格配置 + PostgreSQL 知识图谱。"""
 
-    def __init__(self, soul_path: str = "/root/.hermes/SOUL.md"):
+    def __init__(self, soul_path: str = None):
+        if soul_path is None:
+            from pathlib import Path as _P
+            soul_path = str(_P.home() / ".hermes" / "SOUL.md")
         self.soul_path = soul_path
         self._soul_content: Optional[str] = None
         self._graph_store: dict = {}  # Simple in-memory KG for now

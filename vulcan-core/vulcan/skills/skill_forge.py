@@ -41,9 +41,12 @@ logger = logging.getLogger("Vulcan.SkillForge")
 # Paths
 # ---------------------------------------------------------------------------
 
-VULCAN_HOME = Path(os.environ.get("VULCAN_HOME", "/root/.vulcan"))
+import os as _os
+_home = _os.path.expanduser("~")
+
+VULCAN_HOME = Path(os.environ.get("VULCAN_HOME", str(Path(_home) / ".vulcan")))
 VULCAN_SKILLS_DIR = VULCAN_HOME / "skills"
-HERMES_SKILLS_DIR = Path("/root/.hermes/skills")
+HERMES_SKILLS_DIR = Path(_home) / ".hermes" / "skills"
 # Vulcan's built-in skill bundles (shipped with the package)
 _VULCAN_BUNDLES = Path(__file__).parent / "bundles"
 HUB_DIR = VULCAN_SKILLS_DIR / ".hub"

@@ -10,16 +10,17 @@ ENV/
 env/
 .eggs/
 *.egg-info/
-dist/
 build/
 *.egg
 
 # Node
 node_modules/
 .vite/
-dist/
 dist-ssr/
 *.local
+
+# BUT ship the pre-built frontend (needed for standalone deployment)
+!vulcan-webui/dist/
 
 # Environment
 .env

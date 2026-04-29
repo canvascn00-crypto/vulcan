@@ -1,131 +1,90 @@
 #!/usr/bin/env bash
-# ============================================================
-#  Vulcan 一键部署 — 一条命令搞定，前后端合一，自动后台运行
-#  用法: bash deploy.sh
-#  适配: Termux / Ubuntu / Debian / CentOS / AlmaLinux / macOS
-# ============================================================
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  Vulcan AI — 一键部署脚本 (Termux / Linux)                  ║
+# ║  用法: bash deploy.sh                                        ║
+# ╚══════════════════════════════════════════════════════════════╝
 set -e
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()  { printf "${GREEN}[✓]${NC} $*\n"; }
-warn()  { printf "${YELLOW}[!]${NC} $*\n"; }
-fail()  { printf "${RED}[✗]${NC} $*\n"; exit 1; }
-step()  { printf "${CYAN}[→]${NC} $*\n"; }
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# ---------- 检测环境 ----------
+echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║  Vulcan AI — 盗火者  一键部署            ║${NC}"
+echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
+
+# ── 1. 检测环境 ──
 IS_TERMUX=false
-[ -n "$TERMUX_VERSION" ] || [ -d "/data/data/com.termux" ] && IS_TERMUX=true
+if [ -n "$TERMUX_VERSION" ] || [ -d "/data/data/com.termux" ]; then
+    IS_TERMUX=true
+    echo -e "${YELLOW}[i] Termux 环境检测${NC}"
+fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
-PYTHON="python"
-$IS_TERMUX || PYTHON="python3"
-
-echo ""
-echo "========================================================"
-echo "  🔥 Vulcan 一键部署"
-echo "========================================================"
-echo ""
-
-# ---------- 1. 系统依赖 ----------
-step "安装系统依赖..."
-if $IS_TERMUX; then
+# ── 2. 安装系统依赖 ──
+echo -e "${GREEN}[1/6] 安装系统依赖...${NC}"
+if [ "$IS_TERMUX" = true ]; then
     pkg update -y 2>/dev/null || true
-    pkg install -y python python-pip nodejs git 2>/dev/null || true
-    PYTHON="python"
-elif [ "$(uname -s)" = "Darwin" ]; then
-    command -v brew &>/dev/null && brew install python3 node git 2>/dev/null || true
+    pkg install -y python git nodejs 2>/dev/null || true
 else
-    if command -v apt-get &>/dev/null; then
-        sudo apt-get update -qq && sudo apt-get install -y python3 python3-pip python3-venv nodejs npm git 2>/dev/null || true
-    elif command -v dnf &>/dev/null; then
-        sudo dnf install -y python3 python3-pip nodejs npm git 2>/dev/null || true
+    if command -v apt &>/dev/null; then
+        apt update -y && apt install -y python3 python3-pip python3-venv git nodejs npm 2>/dev/null || true
     elif command -v yum &>/dev/null; then
-        sudo yum install -y python3 python3-pip nodejs npm git 2>/dev/null || true
-    elif command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm python python-pip nodejs npm git 2>/dev/null || true
-    elif command -v apk &>/dev/null; then
-        sudo apk add python3 py3-pip nodejs npm git 2>/dev/null || true
+        yum install -y python3 python3-pip git nodejs npm 2>/dev/null || true
     fi
 fi
 
-# ---------- 2. Python 依赖 ----------
-step "安装 Python 依赖..."
-
-if $IS_TERMUX; then
-    PIP="pip"
-    # Termux 不支持 pydantic v2 编译，用 v1
-    pip install --quiet "pydantic<2" uvicorn fastapi httpx pyyaml aiofiles python-dotenv python-multipart click rich email-validator 2>/dev/null || true
+# ── 3. 克隆仓库 ──
+VULCAN_DIR="$HOME/vulcan"
+if [ ! -d "$VULCAN_DIR/.git" ]; then
+    echo -e "${GREEN}[2/6] 克隆 Vulcan 仓库...${NC}"
+    git clone https://github.com/canvascn00-crypto/vulcan.git "$VULCAN_DIR"
 else
-    if [ ! -d "venv" ]; then
-        $PYTHON -m venv venv
-    fi
-    source venv/bin/activate
-    PIP="pip"
-    pip install --quiet --upgrade pip 2>/dev/null || true
-    pip install --quiet fastapi "uvicorn[standard]" httpx pydantic pydantic-settings pyyaml aiofiles python-dotenv python-multipart click rich email-validator structlog 2>/dev/null || true
+    echo -e "${GREEN}[2/6] 更新 Vulcan 仓库...${NC}"
+    cd "$VULCAN_DIR" && git pull origin master || true
 fi
+cd "$VULCAN_DIR"
 
-# 验证 uvicorn
-$PYTHON -c "import uvicorn" 2>/dev/null || {
-    warn "uvicorn 安装失败，尝试用户级安装..."
-    $PYTHON -m pip install --user uvicorn fastapi httpx pydantic 2>/dev/null || true
-    export PATH="$HOME/.local/bin:$PATH"
-    $PYTHON -c "import uvicorn" 2>/dev/null || fail "uvicorn 安装失败，请手动: pip install uvicorn"
-}
-info "Python 依赖完成"
-
-# ---------- 3. 构建前端 ----------
-step "构建前端..."
-if command -v node &>/dev/null; then
-    cd "$SCRIPT_DIR/vulcan-webui"
-    [ -d "node_modules" ] || npm install --legacy-peer-deps 2>/dev/null || npm install 2>/dev/null || true
-    npm run build 2>/dev/null && info "前端构建完成" || warn "前端构建失败（不影响 API）"
-    cd "$SCRIPT_DIR"
-else
-    warn "未安装 Node.js，跳过前端（仅 API 模式）"
+# ── 4. 安装 Python 依赖 ──
+echo -e "${GREEN}[3/6] 安装 Python 依赖...${NC}"
+if [ ! -d "venv" ]; then
+    python3 -m venv venv 2>/dev/null || python -m venv venv
 fi
+source venv/bin/activate
+pip install --upgrade pip -q
+pip install -r vulcan-core/requirements-minimal.txt -q 2>/dev/null || \
+    pip install fastapi uvicorn httpx aiofiles pyyaml pydantic python-dotenv python-multipart -q
 
-# ---------- 4. 启动 ----------
-HOST="${VULCAN_HOST:-0.0.0.0}"
-PORT="${VULCAN_PORT:-8000}"
-PIDFILE="$SCRIPT_DIR/.vulcan.pid"
-LOGFILE="$SCRIPT_DIR/vulcan.log"
-
-# 停掉旧实例
-if [ -f "$PIDFILE" ]; then
-    OLD_PID=$(cat "$PIDFILE" 2>/dev/null)
-    kill "$OLD_PID" 2>/dev/null || true
-    rm -f "$PIDFILE"
+# ── 5. 构建前端 ──
+echo -e "${GREEN}[4/6] 构建前端...${NC}"
+cd vulcan-webui
+if [ ! -d "node_modules" ]; then
+    npm install 2>/dev/null || npm install --legacy-peer-deps
 fi
+npm run build
 
-export PYTHONPATH="$SCRIPT_DIR/vulcan-core:${PYTHONPATH:-}"
+# ── 6. 启动后端 ──
+echo -e "${GREEN}[5/6] 启动 Vulcan 后端...${NC}"
+cd "$VULCAN_DIR/vulcan-core"
 
-if $IS_TERMUX; then
-    # Termux: nohup 后台运行
-    nohup $PYTHON -m uvicorn vulcan.main:app --host "$HOST" --port "$PORT" > "$LOGFILE" 2>&1 &
-    echo $! > "$PIDFILE"
-else
-    if [ -d "venv" ]; then
-        source venv/bin/activate
-    fi
-    nohup $PYTHON -m uvicorn vulcan.main:app --host "$HOST" --port "$PORT" > "$LOGFILE" 2>&1 &
-    echo $! > "$PIDFILE"
-fi
+# 杀掉旧的
+fuser -k 8000/tcp 2>/dev/null || true
 
-sleep 2
+# 设置环境变量
+export HOME="${HOME:-/root}"
+export VULCAN_HOME="$HOME/.vulcan"
+mkdir -p "$VULCAN_HOME/skills"
 
-# 验证启动
-if kill -0 $(cat "$PIDFILE" 2>/dev/null) 2>/dev/null; then
-    echo ""
-    echo "========================================================"
-    echo "  🔥 Vulcan 已启动 (PID: $(cat $PIDFILE))"
-    echo "  🌐 http://localhost:${PORT}        ← 前端页面"
-    echo "  📡 http://localhost:${PORT}/docs   ← API 文档"
-    echo "  📋 日志: tail -f ${LOGFILE}"
-    echo "  🛑 停止: kill \$(cat ${PIDFILE})"
-    echo "========================================================"
-    echo ""
-else
-    fail "启动失败，查看日志: cat ${LOGFILE}"
-fi
+echo -e "${GREEN}[6/6] Vulcan 启动中...${NC}"
+echo ""
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}  ✅ Vulcan 已就绪！${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  📱 打开浏览器访问: ${YELLOW}http://localhost:8000${NC}"
+echo -e "  🔑 首次启动请查看终端输出的 API Key"
+echo -e "  🛑 停止: Ctrl+C"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+uvicorn vulcan.main:app --host 0.0.0.0 --port 8000
